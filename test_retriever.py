@@ -353,3 +353,28 @@ def test_provider_returning_empty_vector_is_rejected():
         match="Embedding vectors must not be empty"
     ):
         retriever.retrieve("query")
+
+
+def test_expected_dimension_is_enforced_for_query_vectors():
+    retriever = Retriever(
+        chunks={"c1": "First chunk."},
+        embedding_provider=StubEmbeddingProvider(
+            outputs=[[[1.0, 0.0, 0.0]]]
+        ),
+        expected_dimension=2,
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="does not match expected_dimension",
+    ):
+        retriever.retrieve("query")
+
+
+@pytest.mark.parametrize("invalid", [0, -1, True, 1.5, "3"])
+def test_invalid_expected_dimension_is_rejected(invalid):
+    with pytest.raises(
+        ValueError,
+        match="expected_dimension must be a positive integer",
+    ):
+        Retriever({}, object(), expected_dimension=invalid)

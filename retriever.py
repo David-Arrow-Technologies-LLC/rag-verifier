@@ -5,10 +5,24 @@ class Retriever:
     def __init__(
         self,
         chunks,
-        embedding_provider
+        embedding_provider,
+        expected_dimension=None
     ):
+        if (
+            expected_dimension is not None
+            and (
+                isinstance(expected_dimension, bool)
+                or not isinstance(expected_dimension, int)
+                or expected_dimension <= 0
+            )
+        ):
+            raise ValueError(
+                "expected_dimension must be a positive integer"
+            )
+
         self.chunks = chunks
         self.embedding_provider = embedding_provider
+        self.expected_dimension = expected_dimension
 
     def validate_embedding_batch(
         self,
@@ -49,6 +63,15 @@ class Retriever:
             elif len(vector) != expected_dimension:
                 raise ValueError(
                     "Embedding vectors must have consistent dimensions"
+                )
+
+            if (
+                self.expected_dimension is not None
+                and len(vector) != self.expected_dimension
+            ):
+                raise ValueError(
+                    "Embedding vector dimension does not match "
+                    "expected_dimension"
                 )
 
             for value in vector:
@@ -136,6 +159,22 @@ class Retriever:
         return self.embedding_provider.encode(
             texts
         )
+
+    def validate_provider_embeddings(self, query_texts):
+        query_vectors = self._encode_queries(query_texts)
+        self.validate_embedding_batch(
+            query_vectors,
+            expected_count=len(query_texts)
+        )
+
+        chunk_texts = list(self.chunks.values())
+        chunk_vectors = self._encode_documents(chunk_texts)
+        self.validate_embedding_batch(
+            chunk_vectors,
+            expected_count=len(chunk_texts)
+        )
+
+        return query_vectors, chunk_vectors
 
     def retrieve(
         self,
