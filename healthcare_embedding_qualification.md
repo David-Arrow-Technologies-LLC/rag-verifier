@@ -4,8 +4,9 @@ This slice connects the governed healthcare retrieval benchmark to a concrete em
 
 The runner:
 
-- validates candidate model identity, pinned revision, provider type, and declared embedding dimension;
-- probes the provider before benchmarking and rejects a dimension mismatch;
+- binds candidate metadata to the identity and revision observed by the provider factory;
+- preflights both query and document encoders and enforces the declared dimension on every benchmark embedding;
+- rejects relevance judgments that do not exist in the supplied chunk corpus before loading a provider;
 - executes the existing `HealthcareRetrievalBenchmark` through the production `Retriever` contract;
 - evaluates the resulting metrics through the existing `ModelQualificationPolicy`; and
 - emits the existing governed `ModelQualificationRecord`.

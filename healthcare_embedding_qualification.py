@@ -1,6 +1,17 @@
+from dataclasses import dataclass
+
 from healthcare_retrieval_benchmark import HealthcareRetrievalBenchmark
 from model_qualification import ModelQualificationRecordBuilder
 from retriever import Retriever
+
+
+@dataclass(frozen=True)
+class LoadedEmbeddingProvider:
+    provider: object
+    model_id: str
+    model_revision: str
+    provider_type: str
+    embedding_dimension: int
 
 
 class HealthcareEmbeddingQualificationRunner:
@@ -74,44 +85,70 @@ class HealthcareEmbeddingQualificationRunner:
             if not isinstance(text, str) or not text.strip():
                 raise ValueError("chunk text must be a non-empty string")
 
-    @staticmethod
-    def _validate_observed_embedding(provider, chunks, expected_dimension):
-        encode_documents = getattr(provider, "encode_documents", None)
-        if not callable(encode_documents):
-            encode_documents = getattr(provider, "encode", None)
-
-        if not callable(encode_documents):
+    @classmethod
+    def _validate_loaded_provider(cls, loaded, model):
+        if not isinstance(loaded, LoadedEmbeddingProvider):
             raise ValueError(
-                "embedding provider must provide encode_documents() or encode()"
+                "provider_factory must return LoadedEmbeddingProvider"
             )
 
-        first_text = next(iter(chunks.values()))
-        embeddings = encode_documents([first_text])
+        observed_model = {
+            "model_id": loaded.model_id,
+            "model_revision": loaded.model_revision,
+            "provider_type": loaded.provider_type,
+            "embedding_dimension": loaded.embedding_dimension,
+        }
+        cls._validate_model(observed_model)
 
-        if not isinstance(embeddings, list) or len(embeddings) != 1:
-            raise ValueError("embedding provider returned an invalid probe batch")
-
-        vector = embeddings[0]
-        if not isinstance(vector, list) or not vector:
-            raise ValueError("embedding provider returned an invalid probe vector")
-
-        if len(vector) != expected_dimension:
+        if observed_model != {
+            field: model[field]
+            for field in observed_model
+        }:
             raise ValueError(
-                "observed embedding dimension does not match model metadata"
+                "loaded provider identity does not match model metadata"
+            )
+
+        encode_queries = getattr(
+            loaded.provider,
+            "encode_queries",
+            None,
+        )
+        encode_documents = getattr(
+            loaded.provider,
+            "encode_documents",
+            None,
+        )
+        encode = getattr(loaded.provider, "encode", None)
+
+        if not callable(encode_queries) and not callable(encode):
+            raise ValueError(
+                "embedding provider must provide encode_queries() or encode()"
+            )
+        if not callable(encode_documents) and not callable(encode):
+            raise ValueError(
+                "embedding provider must provide encode_documents() or encode()"
             )
 
     def qualify(self, model, chunks, queries):
         self._validate_model(model)
         self._validate_chunks(chunks)
 
-        provider = self.provider_factory(dict(model))
-        self._validate_observed_embedding(
-            provider,
-            chunks,
-            model["embedding_dimension"],
+        HealthcareRetrievalBenchmark.validate_queries(
+            queries,
+            corpus_ids=chunks.keys(),
         )
 
-        retriever = Retriever(chunks, provider)
+        loaded = self.provider_factory(dict(model))
+        self._validate_loaded_provider(loaded, model)
+
+        retriever = Retriever(
+            chunks,
+            loaded.provider,
+            expected_dimension=model["embedding_dimension"],
+        )
+        retriever.validate_provider_embeddings(
+            [query["text"] for query in queries]
+        )
         benchmark = HealthcareRetrievalBenchmark(
             retriever,
             top_k=self.top_k,

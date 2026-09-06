@@ -89,6 +89,42 @@ class HealthcareRetrievalBenchmark:
                 "relevant_ids must be unique"
             )
 
+    @classmethod
+    def validate_queries(cls, queries, corpus_ids=None):
+        if (
+            not isinstance(queries, list)
+            or not queries
+        ):
+            raise ValueError(
+                "queries must be a non-empty list"
+            )
+
+        query_ids = []
+        corpus_id_set = (
+            None
+            if corpus_ids is None
+            else set(corpus_ids)
+        )
+
+        for query in queries:
+            cls._validate_query(query)
+            query_ids.append(query["query_id"])
+
+            if (
+                corpus_id_set is not None
+                and not set(query["relevant_ids"]).issubset(
+                    corpus_id_set
+                )
+            ):
+                raise ValueError(
+                    "relevant_ids must exist in the chunk corpus"
+                )
+
+        if len(set(query_ids)) != len(query_ids):
+            raise ValueError(
+                "query_ids must be unique"
+            )
+
     @staticmethod
     def _validate_retrieved(retrieved):
         if not isinstance(retrieved, list):
@@ -130,24 +166,7 @@ class HealthcareRetrievalBenchmark:
         return retrieved_ids
 
     def evaluate(self, queries):
-        if (
-            not isinstance(queries, list)
-            or not queries
-        ):
-            raise ValueError(
-                "queries must be a non-empty list"
-            )
-
-        query_ids = []
-
-        for query in queries:
-            self._validate_query(query)
-            query_ids.append(query["query_id"])
-
-        if len(set(query_ids)) != len(query_ids):
-            raise ValueError(
-                "query_ids must be unique"
-            )
+        self.validate_queries(queries)
 
         per_query = []
 
