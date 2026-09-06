@@ -1,6 +1,11 @@
 import pytest
 
-from healthcare_real_model_qualification import build_sentence_transformer_runner, load_qualification_manifest
+from embedding_provider import LoadedModelDescriptor
+from healthcare_real_model_qualification import (
+    _build_sentence_transformer_runner,
+    build_sentence_transformer_runner,
+    load_qualification_manifest,
+)
 
 
 MANIFEST_PATH = "healthcare_minilm_qualification.json"
@@ -20,6 +25,12 @@ class _DeterministicProvider:
     def __init__(self, model_id, revision):
         type(self).calls.append((model_id, revision))
         self.model = _ObservedModel(384)
+        self.loaded_model_descriptor = LoadedModelDescriptor(
+            model_id=model_id,
+            model_revision=revision,
+            provider_type="sentence-transformer",
+            embedding_dimension=384,
+        )
 
     def encode(self, texts):
         if isinstance(texts, str):
@@ -40,7 +51,10 @@ def test_repository_manifest_is_valid_and_pins_minilm():
 def test_runner_passes_exact_pinned_identity_to_provider():
     _DeterministicProvider.calls = []
     manifest = load_qualification_manifest(MANIFEST_PATH)
-    runner = build_sentence_transformer_runner(manifest, _DeterministicProvider)
+    runner = _build_sentence_transformer_runner(
+        manifest,
+        _DeterministicProvider,
+    )
     runner.provider_factory(manifest.payload()["model"])
     assert _DeterministicProvider.calls == [("sentence-transformers/all-MiniLM-L6-v2", "1110a243fdf4706b3f48f1d95db1a4f5529b4d41")]
 
@@ -49,10 +63,52 @@ def test_runner_rejects_observed_dimension_mismatch():
     class WrongDimensionProvider(_DeterministicProvider):
         def __init__(self, model_id, revision):
             self.model = _ObservedModel(768)
+            self.loaded_model_descriptor = LoadedModelDescriptor(
+                model_id=model_id,
+                model_revision=revision,
+                provider_type="sentence-transformer",
+                embedding_dimension=768,
+            )
 
     manifest = load_qualification_manifest(MANIFEST_PATH)
-    runner = build_sentence_transformer_runner(manifest, WrongDimensionProvider)
-    with pytest.raises(ValueError, match="embedding dimension mismatch"):
+    runner = _build_sentence_transformer_runner(
+        manifest,
+        WrongDimensionProvider,
+    )
+    with pytest.raises(ValueError, match="identity does not match"):
+        runner.provider_factory(manifest.payload()["model"])
+
+
+def test_runner_rejects_provider_that_echoes_no_trusted_descriptor():
+    class ForgedProvider(_DeterministicProvider):
+        def __init__(self, model_id, revision):
+            self.model = _ObservedModel(384)
+
+    manifest = load_qualification_manifest(MANIFEST_PATH)
+    runner = _build_sentence_transformer_runner(manifest, ForgedProvider)
+
+    with pytest.raises(ValueError, match="trusted loaded-model descriptor"):
+        runner.provider_factory(manifest.payload()["model"])
+
+
+def test_runner_rejects_forged_revision_descriptor():
+    class ForgedRevisionProvider(_DeterministicProvider):
+        def __init__(self, model_id, revision):
+            self.model = _ObservedModel(384)
+            self.loaded_model_descriptor = LoadedModelDescriptor(
+                model_id=model_id,
+                model_revision="f" * 40,
+                provider_type="sentence-transformer",
+                embedding_dimension=384,
+            )
+
+    manifest = load_qualification_manifest(MANIFEST_PATH)
+    runner = _build_sentence_transformer_runner(
+        manifest,
+        ForgedRevisionProvider,
+    )
+
+    with pytest.raises(ValueError, match="identity does not match"):
         runner.provider_factory(manifest.payload()["model"])
 
 
