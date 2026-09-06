@@ -87,7 +87,11 @@ class VersionedHealthcareQualificationManifest:
             raise ValueError("top_k must be a positive integer")
 
         self._payload_json = canonical_payload(payload)
-        self.payload_sha256 = digest
+        self._payload_sha256 = digest
+
+    @property
+    def payload_sha256(self):
+        return self._payload_sha256
 
     def payload(self):
         return json.loads(self._payload_json)

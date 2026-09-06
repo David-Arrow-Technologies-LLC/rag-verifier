@@ -150,6 +150,13 @@ def test_manifest_payload_returns_isolated_copy():
     )
 
 
+def test_verified_manifest_digest_is_read_only():
+    manifest = VersionedHealthcareQualificationManifest(_document())
+
+    with pytest.raises(AttributeError):
+        manifest.payload_sha256 = "0" * 64
+
+
 @pytest.mark.parametrize("schema_version", [True, 0, 2, "1"])
 def test_manifest_rejects_unsupported_schema_version(schema_version):
     payload = _payload()
