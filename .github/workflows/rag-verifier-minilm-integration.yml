@@ -2,15 +2,6 @@ name: RAG Verifier MiniLM Integration Gate
 
 on:
   pull_request:
-    paths:
-      - "embedding_provider.py"
-      - "healthcare_embedding_qualification.py"
-      - "healthcare_qualification_manifest.py"
-      - "healthcare_real_model_qualification.py"
-      - "healthcare_minilm_qualification.json"
-      - "test_healthcare_real_model_qualification.py"
-      - "requirements-integration.txt"
-      - ".github/workflows/rag-verifier-minilm-integration.yml"
   workflow_dispatch:
 
 permissions:
