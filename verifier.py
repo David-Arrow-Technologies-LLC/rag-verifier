@@ -1,6 +1,10 @@
 import math
 import re
-from nli_provider import HuggingFaceNLIProvider
+from nli_provider import (
+    DEFAULT_NLI_MODEL_ID,
+    HuggingFaceNLIProvider,
+    resolve_nli_model_revision,
+)
 
 
 class RAGVerifier:
@@ -9,10 +13,11 @@ class RAGVerifier:
         self,
         chunks,
         retrieved_ids,
-        model_id="cross-encoder/nli-deberta-v3-small",
+        model_id=DEFAULT_NLI_MODEL_ID,
         pass_threshold=0.90,
         fail_threshold=0.90,
-        nli_provider=None
+        nli_provider=None,
+        model_revision=None,
     ):
         self.chunks = chunks
         self.retrieved_ids = set(retrieved_ids)
@@ -34,7 +39,8 @@ class RAGVerifier:
             nli_provider
             if nli_provider is not None
             else HuggingFaceNLIProvider(
-                model_id=model_id
+                model_id=model_id,
+                revision=resolve_nli_model_revision(model_id, model_revision),
             )
         )
 

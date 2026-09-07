@@ -1,0 +1,304 @@
+{
+  "payload": {
+    "schema_version": 2,
+    "benchmark_id": "nli-verifier-contract",
+    "benchmark_version": "synthetic-medical-nli-v2",
+    "model": {
+      "model_id": "MoritzLaurer/DeBERTa-v3-base-mnli-fever-anli",
+      "model_revision": "6f5cf0a2b59cabb106aca4c287eed12e357e90eb",
+      "provider_type": "huggingface-sequence-classification",
+      "labels": [
+        "entailment",
+        "neutral",
+        "contradiction"
+      ]
+    },
+    "policy": {
+      "pass_threshold": 0.9,
+      "fail_threshold": 0.9
+    },
+    "cases": [
+      {
+        "case_id": "ENT-01",
+        "category": "identity",
+        "critical": true,
+        "premise": "The patient has hypertension.",
+        "hypothesis": "The patient has hypertension.",
+        "expected_label": "entailment",
+        "expected_status": "PASS"
+      },
+      {
+        "case_id": "ENT-02",
+        "category": "paraphrase",
+        "critical": false,
+        "premise": "The patient experienced a myocardial infarction.",
+        "hypothesis": "The patient had a heart attack.",
+        "expected_label": "entailment",
+        "expected_status": "PASS"
+      },
+      {
+        "case_id": "ENT-03",
+        "category": "medication-dose",
+        "critical": false,
+        "premise": "The patient takes lisinopril 10 mg daily.",
+        "hypothesis": "The patient takes 10 mg of lisinopril each day.",
+        "expected_label": "entailment",
+        "expected_status": "PASS"
+      },
+      {
+        "case_id": "ENT-04",
+        "category": "numeric",
+        "critical": true,
+        "premise": "The potassium level is 6.8 mmol/L.",
+        "hypothesis": "The potassium level is above 6 mmol/L.",
+        "expected_label": "entailment",
+        "expected_status": "PASS"
+      },
+      {
+        "case_id": "ENT-05",
+        "category": "temporal",
+        "critical": false,
+        "premise": "The patient developed fever before the cough began.",
+        "hypothesis": "The fever started before the cough.",
+        "expected_label": "entailment",
+        "expected_status": "PASS"
+      },
+      {
+        "case_id": "ENT-06",
+        "category": "comorbidity",
+        "critical": true,
+        "premise": "The patient has both hypertension and diabetes.",
+        "hypothesis": "The patient has diabetes.",
+        "expected_label": "entailment",
+        "expected_status": "PASS"
+      },
+      {
+        "case_id": "ENT-07",
+        "category": "negated-finding",
+        "critical": false,
+        "premise": "The patient denies fever.",
+        "hypothesis": "The patient does not have fever.",
+        "expected_label": "entailment",
+        "expected_status": "PASS"
+      },
+      {
+        "case_id": "ENT-08",
+        "category": "imaging",
+        "critical": false,
+        "premise": "Chest imaging shows a right lower-lobe infiltrate.",
+        "hypothesis": "An infiltrate is present in the right lower lobe.",
+        "expected_label": "entailment",
+        "expected_status": "PASS"
+      },
+      {
+        "case_id": "ENT-09",
+        "category": "allergy",
+        "critical": true,
+        "premise": "Penicillin is listed as a medication allergy.",
+        "hypothesis": "The patient is allergic to penicillin.",
+        "expected_label": "entailment",
+        "expected_status": "PASS"
+      },
+      {
+        "case_id": "ENT-10",
+        "category": "demographic",
+        "critical": false,
+        "premise": "The patient is a 64-year-old man.",
+        "hypothesis": "The patient is male.",
+        "expected_label": "entailment",
+        "expected_status": "PASS"
+      },
+      {
+        "case_id": "CON-01",
+        "category": "explicit-negation",
+        "critical": true,
+        "premise": "The patient has hypertension.",
+        "hypothesis": "The patient does not have hypertension.",
+        "expected_label": "contradiction",
+        "expected_status": "FAIL"
+      },
+      {
+        "case_id": "CON-02",
+        "category": "medication-dose",
+        "critical": true,
+        "premise": "The patient takes warfarin 5 mg daily.",
+        "hypothesis": "The patient takes warfarin 10 mg daily.",
+        "expected_label": "contradiction",
+        "expected_status": "FAIL"
+      },
+      {
+        "case_id": "CON-03",
+        "category": "numeric",
+        "critical": true,
+        "premise": "The potassium level is 6.8 mmol/L.",
+        "hypothesis": "The potassium level is 3.8 mmol/L.",
+        "expected_label": "contradiction",
+        "expected_status": "FAIL"
+      },
+      {
+        "case_id": "CON-04",
+        "category": "laterality",
+        "critical": false,
+        "premise": "The fracture is in the left wrist.",
+        "hypothesis": "The fracture is in the right wrist.",
+        "expected_label": "contradiction",
+        "expected_status": "FAIL"
+      },
+      {
+        "case_id": "CON-05",
+        "category": "temporal",
+        "critical": false,
+        "premise": "The fever began before the rash.",
+        "hypothesis": "The rash began before the fever.",
+        "expected_label": "contradiction",
+        "expected_status": "FAIL"
+      },
+      {
+        "case_id": "CON-06",
+        "category": "allergy",
+        "critical": true,
+        "premise": "The patient has a severe penicillin allergy.",
+        "hypothesis": "The patient has no penicillin allergy.",
+        "expected_label": "contradiction",
+        "expected_status": "FAIL"
+      },
+      {
+        "case_id": "CON-07",
+        "category": "laboratory",
+        "critical": false,
+        "premise": "The glucose level is markedly elevated.",
+        "hypothesis": "The glucose level is normal.",
+        "expected_label": "contradiction",
+        "expected_status": "FAIL"
+      },
+      {
+        "case_id": "CON-08",
+        "category": "demographic",
+        "critical": false,
+        "premise": "The patient is 72 years old.",
+        "hypothesis": "The patient is 27 years old.",
+        "expected_label": "contradiction",
+        "expected_status": "FAIL"
+      },
+      {
+        "case_id": "CON-09",
+        "category": "sex",
+        "critical": false,
+        "premise": "The patient is a woman.",
+        "hypothesis": "The patient is a man.",
+        "expected_label": "contradiction",
+        "expected_status": "FAIL"
+      },
+      {
+        "case_id": "CON-10",
+        "category": "imaging",
+        "critical": true,
+        "premise": "The CT scan shows no pulmonary embolism.",
+        "hypothesis": "The CT scan confirms pulmonary embolism.",
+        "expected_label": "contradiction",
+        "expected_status": "FAIL"
+      },
+      {
+        "case_id": "NEU-01",
+        "category": "comorbidity",
+        "critical": false,
+        "premise": "The patient has hypertension.",
+        "hypothesis": "The patient has diabetes.",
+        "expected_label": "neutral",
+        "expected_status": "REVIEW"
+      },
+      {
+        "case_id": "NEU-02",
+        "category": "temporal",
+        "critical": false,
+        "premise": "Aspirin is a medication.",
+        "hypothesis": "The patient took aspirin on Monday.",
+        "expected_label": "neutral",
+        "expected_status": "REVIEW"
+      },
+      {
+        "case_id": "NEU-03",
+        "category": "encounter",
+        "critical": false,
+        "premise": "Pneumonia affects the lungs.",
+        "hypothesis": "The patient was admitted yesterday.",
+        "expected_label": "neutral",
+        "expected_status": "REVIEW"
+      },
+      {
+        "case_id": "NEU-04",
+        "category": "comorbidity",
+        "critical": false,
+        "premise": "The patient has asthma.",
+        "hypothesis": "The patient has chronic kidney disease.",
+        "expected_label": "neutral",
+        "expected_status": "REVIEW"
+      },
+      {
+        "case_id": "NEU-05",
+        "category": "medication-schedule",
+        "critical": false,
+        "premise": "The patient takes metformin.",
+        "hypothesis": "The patient takes metformin with breakfast.",
+        "expected_label": "neutral",
+        "expected_status": "REVIEW"
+      },
+      {
+        "case_id": "NEU-06",
+        "category": "exposure",
+        "critical": false,
+        "premise": "The patient has a fever.",
+        "hypothesis": "The patient recently traveled internationally.",
+        "expected_label": "neutral",
+        "expected_status": "REVIEW"
+      },
+      {
+        "case_id": "NEU-07",
+        "category": "symptom",
+        "critical": false,
+        "premise": "The potassium level is elevated.",
+        "hypothesis": "The patient reports palpitations.",
+        "expected_label": "neutral",
+        "expected_status": "REVIEW"
+      },
+      {
+        "case_id": "NEU-08",
+        "category": "duration",
+        "critical": false,
+        "premise": "The patient has left-sided abdominal pain.",
+        "hypothesis": "The pain began three days ago.",
+        "expected_label": "neutral",
+        "expected_status": "REVIEW"
+      },
+      {
+        "case_id": "NEU-09",
+        "category": "treatment",
+        "critical": false,
+        "premise": "The patient has type 2 diabetes.",
+        "hypothesis": "The patient uses insulin.",
+        "expected_label": "neutral",
+        "expected_status": "REVIEW"
+      },
+      {
+        "case_id": "NEU-10",
+        "category": "missing-information",
+        "critical": true,
+        "premise": "The record confirms hypertension and states that diabetes status is unknown.",
+        "hypothesis": "The patient has diabetes.",
+        "expected_label": "neutral",
+        "expected_status": "REVIEW"
+      }
+    ],
+    "qualification_thresholds": {
+      "minimum_label_accuracy": 0.85,
+      "minimum_decision_accuracy": 0.85,
+      "minimum_per_label_accuracy": {
+        "contradiction": 0.8,
+        "entailment": 0.8,
+        "neutral": 0.8
+      },
+      "require_all_critical_cases": true
+    }
+  },
+  "payload_sha256": "5f2f90d865c067f32ce902fe0fa01cc7508b81a6f3aca35b800619f55c5b3b13"
+}

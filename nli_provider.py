@@ -1,6 +1,16 @@
 from dataclasses import dataclass
 
 
+DEFAULT_NLI_MODEL_ID = "MoritzLaurer/DeBERTa-v3-base-mnli-fever-anli"
+DEFAULT_NLI_MODEL_REVISION = "6f5cf0a2b59cabb106aca4c287eed12e357e90eb"
+
+
+def resolve_nli_model_revision(model_id, revision):
+    if revision is None and model_id == DEFAULT_NLI_MODEL_ID:
+        return DEFAULT_NLI_MODEL_REVISION
+    return revision
+
+
 @dataclass(frozen=True)
 class LoadedNLIModelDescriptor:
     model_id: str
@@ -14,12 +24,13 @@ class HuggingFaceNLIProvider:
 
     def __init__(
         self,
-        model_id="cross-encoder/nli-deberta-v3-small",
+        model_id=DEFAULT_NLI_MODEL_ID,
         revision=None,
     ):
         import torch
         from transformers import AutoModelForSequenceClassification, AutoTokenizer
 
+        revision = resolve_nli_model_revision(model_id, revision)
         self.model_id = model_id
         self._torch = torch
         self.tokenizer = AutoTokenizer.from_pretrained(model_id, revision=revision)

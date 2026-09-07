@@ -3,12 +3,14 @@ import re
 
 import pytest
 
-from nli_provider import LoadedNLIModelDescriptor
+from nli_provider import DEFAULT_NLI_MODEL_ID, DEFAULT_NLI_MODEL_REVISION, LoadedNLIModelDescriptor
 from nli_qualification import NLIQualificationRunner, VersionedNLIQualificationManifest, build_nli_qualification_runner, load_nli_qualification_manifest
 from run_nli_qualification import main, resolve_source_revision, write_qualification_evidence
+from verifier import RAGVerifier
 
 
 MANIFEST_PATH = "nli_deberta_qualification.json"
+MANIFEST_V2_PATH = "nli_deberta_qualification_v2.json"
 
 
 class _FakeProvider:
@@ -23,11 +25,93 @@ class _FakeProvider:
         return {"contradiction": 0.01, "entailment": 0.01, "neutral": 0.98}
 
 
+class _ManifestProvider:
+    def __init__(self, model_id, revision):
+        manifest = load_nli_qualification_manifest(MANIFEST_V2_PATH).payload()
+        self.loaded_model_descriptor = LoadedNLIModelDescriptor(model_id, revision, "huggingface-sequence-classification", tuple(manifest["model"]["labels"]))
+        self.labels = {(case["premise"], case["hypothesis"]): case["expected_label"] for case in manifest["cases"]}
+
+    def predict(self, premise, hypothesis):
+        label = self.labels[(premise, hypothesis)]
+        return {candidate: 0.98 if candidate == label else 0.01 for candidate in ("contradiction", "entailment", "neutral")}
+
+
 def test_repository_manifest_is_valid_and_pinned():
     manifest = load_nli_qualification_manifest(MANIFEST_PATH)
     assert manifest.payload()["model"]["model_revision"] == "fa2804872c3b4bd748f38c0185cc85775361e735"
     with open(MANIFEST_PATH, encoding="utf-8") as manifest_file:
         assert manifest.payload_sha256 == json.load(manifest_file)["payload_sha256"]
+
+
+def test_v2_manifest_is_balanced_versioned_and_critical():
+    manifest = load_nli_qualification_manifest(MANIFEST_V2_PATH)
+    payload = manifest.payload()
+    assert payload["schema_version"] == 2
+    assert payload["benchmark_version"] == "synthetic-medical-nli-v2"
+    assert len(payload["cases"]) == 30
+    assert {label: sum(case["expected_label"] == label for case in payload["cases"]) for label in manifest.LABELS} == {
+        "contradiction": 10,
+        "entailment": 10,
+        "neutral": 10,
+    }
+    assert any(case["critical"] for case in payload["cases"])
+
+
+def test_default_runtime_model_matches_active_v2_manifest(monkeypatch):
+    manifest_model = load_nli_qualification_manifest(MANIFEST_V2_PATH).payload()["model"]
+    observed = {}
+
+    class CapturingProvider:
+        def __init__(self, model_id, revision):
+            observed.update({"model_id": model_id, "model_revision": revision})
+
+    monkeypatch.setattr("verifier.HuggingFaceNLIProvider", CapturingProvider)
+    RAGVerifier(chunks={}, retrieved_ids=set())
+
+    assert observed == {
+        "model_id": DEFAULT_NLI_MODEL_ID,
+        "model_revision": DEFAULT_NLI_MODEL_REVISION,
+    }
+    assert observed == {
+        "model_id": manifest_model["model_id"],
+        "model_revision": manifest_model["model_revision"],
+    }
+
+
+def test_custom_runtime_model_does_not_inherit_default_revision(monkeypatch):
+    observed = {}
+
+    class CapturingProvider:
+        def __init__(self, model_id, revision):
+            observed.update({"model_id": model_id, "model_revision": revision})
+
+    monkeypatch.setattr("verifier.HuggingFaceNLIProvider", CapturingProvider)
+    RAGVerifier(chunks={}, retrieved_ids=set(), model_id="organization/custom-nli")
+
+    assert observed == {
+        "model_id": "organization/custom-nli",
+        "model_revision": None,
+    }
+
+
+def test_v2_runner_emits_stratified_metrics_and_passes_critical_cases():
+    manifest = load_nli_qualification_manifest(MANIFEST_V2_PATH)
+    result = manifest.qualify(NLIQualificationRunner(manifest, _ManifestProvider))
+    record = result["qualification_record"]
+    assert record["metrics"]["per_label_accuracy"] == {"contradiction": 1.0, "entailment": 1.0, "neutral": 1.0}
+    assert record["metrics"]["critical_case_accuracy"] == 1.0
+    assert record["qualification"]["status"] == "PASS"
+
+
+def test_v2_rejects_qualification_that_hides_critical_failure():
+    manifest = load_nli_qualification_manifest(MANIFEST_V2_PATH)
+    record = NLIQualificationRunner(manifest, _ManifestProvider).run()
+    critical = next(case for case in record["case_results"] if case["critical"])
+    critical["scores"] = {"contradiction": 0.01, "entailment": 0.01, "neutral": 0.98}
+    critical["predicted_label"] = "neutral"
+    critical["observed_status"] = "REVIEW"
+    with pytest.raises(ValueError, match="metrics do not match case results"):
+        manifest._validate_record(record)
 
 
 def test_manifest_qualifies_with_matching_observed_provider():
@@ -130,6 +214,6 @@ def test_loader_rejects_duplicate_json_keys(tmp_path):
 @pytest.mark.integration
 @pytest.mark.nli_integration
 def test_pinned_real_nli_model_qualifies():
-    manifest = load_nli_qualification_manifest(MANIFEST_PATH)
+    manifest = load_nli_qualification_manifest(MANIFEST_V2_PATH)
     result = manifest.qualify(build_nli_qualification_runner(manifest))
     assert result["qualification_record"]["qualification"]["status"] == "PASS"
