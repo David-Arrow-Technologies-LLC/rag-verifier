@@ -140,6 +140,7 @@ class VersionedNLIQualificationManifest:
             fail_threshold=payload["policy"]["fail_threshold"],
         )
         seen_case_ids = set()
+        label_matches = decision_matches = 0
         for result in case_results:
             fields = {"case_id", "expected_label", "predicted_label", "expected_status", "observed_status", "scores"}
             if not isinstance(result, dict) or set(result) != fields:
@@ -166,12 +167,21 @@ class VersionedNLIQualificationManifest:
             observed_status = policy_verifier.classify_nli_scores(normalized)["status"]
             if result["predicted_label"] != predicted_label or result["observed_status"] != observed_status:
                 raise ValueError("qualification record case decision mismatch")
+            label_matches += predicted_label == expected_case["expected_label"]
+            decision_matches += observed_status == expected_case["expected_status"]
         metrics = record["metrics"]
         if not isinstance(metrics, dict) or set(metrics) != {"label_accuracy", "decision_accuracy"}:
             raise ValueError("qualification record metrics are invalid")
         for value in metrics.values():
             if isinstance(value, bool) or not isinstance(value, (int, float)) or not 0.0 <= value <= 1.0:
                 raise ValueError("qualification record metrics are invalid")
+        count = len(case_results)
+        expected_metrics = {
+            "label_accuracy": label_matches / count,
+            "decision_accuracy": decision_matches / count,
+        }
+        if metrics != expected_metrics:
+            raise ValueError("qualification record metrics do not match case results")
         thresholds = payload["qualification_thresholds"]
         passed = metrics["label_accuracy"] >= thresholds["minimum_label_accuracy"] and metrics["decision_accuracy"] >= thresholds["minimum_decision_accuracy"]
         expected = {"status": "PASS" if passed else "FAIL", "reason": "QUALIFICATION_THRESHOLDS_SATISFIED" if passed else "QUALIFICATION_THRESHOLDS_NOT_SATISFIED"}
