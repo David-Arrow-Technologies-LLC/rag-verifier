@@ -5,7 +5,7 @@ import pytest
 
 from nli_provider import LoadedNLIModelDescriptor
 from nli_qualification import NLIQualificationRunner, VersionedNLIQualificationManifest, build_nli_qualification_runner, load_nli_qualification_manifest
-from run_nli_qualification import write_qualification_evidence
+from run_nli_qualification import main, resolve_source_revision, write_qualification_evidence
 
 
 MANIFEST_PATH = "nli_deberta_qualification.json"
@@ -47,13 +47,28 @@ def test_manifest_rejects_forged_case_evidence():
         manifest._validate_record(record)
 
 
+def test_manifest_rejects_metrics_that_contradict_case_evidence():
+    manifest = load_nli_qualification_manifest(MANIFEST_PATH)
+    record = NLIQualificationRunner(manifest, _FakeProvider).run()
+    record["case_results"][0]["scores"] = {
+        "contradiction": 0.01,
+        "entailment": 0.01,
+        "neutral": 0.98,
+    }
+    record["case_results"][0]["predicted_label"] = "neutral"
+    record["case_results"][0]["observed_status"] = "REVIEW"
+    with pytest.raises(ValueError, match="metrics do not match case results"):
+        manifest._validate_record(record)
+
+
 def test_evidence_writer_binds_source_runtime_and_digest(tmp_path, monkeypatch):
     manifest = load_nli_qualification_manifest(MANIFEST_PATH)
     qualification = manifest.qualify(NLIQualificationRunner(manifest, _FakeProvider))
     monkeypatch.setattr("run_nli_qualification.qualify_nli_manifest", lambda _path: qualification)
     monkeypatch.setattr("run_nli_qualification.importlib.metadata.version", lambda package: f"pinned-{package}")
+    monkeypatch.setattr("run_nli_qualification.resolve_source_revision", lambda _path: "a" * 40)
     output = tmp_path / "evidence.json"
-    evidence = write_qualification_evidence(MANIFEST_PATH, "a" * 40, output)
+    evidence = write_qualification_evidence(MANIFEST_PATH, output)
     document = json.loads(output.read_text(encoding="utf-8"))
     assert document == evidence
     assert document["payload"]["source_revision"] == "a" * 40
@@ -61,9 +76,30 @@ def test_evidence_writer_binds_source_runtime_and_digest(tmp_path, monkeypatch):
     assert re.fullmatch(r"[0-9a-f]{64}", document["payload_sha256"])
 
 
-def test_evidence_writer_rejects_unpinned_source_revision(tmp_path):
-    with pytest.raises(ValueError, match="source_revision"):
-        write_qualification_evidence(MANIFEST_PATH, "main", tmp_path / "evidence.json")
+def test_source_revision_rejects_dirty_worktree(monkeypatch):
+    class Result:
+        stdout = "?? forged.py\n"
+
+    monkeypatch.setattr("run_nli_qualification.subprocess.run", lambda *args, **kwargs: Result())
+    with pytest.raises(ValueError, match="clean"):
+        resolve_source_revision(".")
+
+
+def test_source_revision_is_derived_from_clean_checkout(monkeypatch):
+    class Result:
+        def __init__(self, stdout):
+            self.stdout = stdout
+
+    results = iter((Result(""), Result("b" * 40 + "\n")))
+    monkeypatch.setattr("run_nli_qualification.subprocess.run", lambda *args, **kwargs: next(results))
+    assert resolve_source_revision(".") == "b" * 40
+
+
+def test_cli_fails_after_writing_failed_qualification(tmp_path, monkeypatch):
+    evidence = {"payload": {"qualification_record": {"qualification": {"status": "FAIL"}}}, "payload_sha256": "a" * 64}
+    monkeypatch.setattr("run_nli_qualification.write_qualification_evidence", lambda *args: evidence)
+    monkeypatch.setattr("sys.argv", ["run_nli_qualification.py", "--manifest", MANIFEST_PATH, "--output", str(tmp_path / "evidence.json")])
+    assert main() == 1
 
 
 def test_manifest_rejects_payload_tampering():
