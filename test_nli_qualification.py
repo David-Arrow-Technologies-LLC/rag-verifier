@@ -3,9 +3,10 @@ import re
 
 import pytest
 
-from nli_provider import LoadedNLIModelDescriptor
+from nli_provider import DEFAULT_NLI_MODEL_ID, DEFAULT_NLI_MODEL_REVISION, LoadedNLIModelDescriptor
 from nli_qualification import NLIQualificationRunner, VersionedNLIQualificationManifest, build_nli_qualification_runner, load_nli_qualification_manifest
 from run_nli_qualification import main, resolve_source_revision, write_qualification_evidence
+from verifier import RAGVerifier
 
 
 MANIFEST_PATH = "nli_deberta_qualification.json"
@@ -54,6 +55,27 @@ def test_v2_manifest_is_balanced_versioned_and_critical():
         "neutral": 10,
     }
     assert any(case["critical"] for case in payload["cases"])
+
+
+def test_default_runtime_model_matches_active_v2_manifest(monkeypatch):
+    manifest_model = load_nli_qualification_manifest(MANIFEST_V2_PATH).payload()["model"]
+    observed = {}
+
+    class CapturingProvider:
+        def __init__(self, model_id, revision):
+            observed.update({"model_id": model_id, "model_revision": revision})
+
+    monkeypatch.setattr("verifier.HuggingFaceNLIProvider", CapturingProvider)
+    RAGVerifier(chunks={}, retrieved_ids=set())
+
+    assert observed == {
+        "model_id": DEFAULT_NLI_MODEL_ID,
+        "model_revision": DEFAULT_NLI_MODEL_REVISION,
+    }
+    assert observed == {
+        "model_id": manifest_model["model_id"],
+        "model_revision": manifest_model["model_revision"],
+    }
 
 
 def test_v2_runner_emits_stratified_metrics_and_passes_critical_cases():
