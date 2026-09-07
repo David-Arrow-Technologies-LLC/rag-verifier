@@ -4,13 +4,13 @@
     "benchmark_id": "nli-verifier-contract",
     "benchmark_version": "synthetic-medical-nli-v2",
     "model": {
-      "model_id": "cross-encoder/nli-deberta-v3-small",
-      "model_revision": "fa2804872c3b4bd748f38c0185cc85775361e735",
+      "model_id": "MoritzLaurer/DeBERTa-v3-base-mnli-fever-anli",
+      "model_revision": "6f5cf0a2b59cabb106aca4c287eed12e357e90eb",
       "provider_type": "huggingface-sequence-classification",
       "labels": [
-        "contradiction",
         "entailment",
-        "neutral"
+        "neutral",
+        "contradiction"
       ]
     },
     "policy": {
@@ -300,5 +300,5 @@
       "require_all_critical_cases": true
     }
   },
-  "payload_sha256": "d039fa9d1c0cb0992dc228581a4dcbc1dbace636b5c7ee870e2667ac9d643009"
+  "payload_sha256": "5f2f90d865c067f32ce902fe0fa01cc7508b81a6f3aca35b800619f55c5b3b13"
 }
