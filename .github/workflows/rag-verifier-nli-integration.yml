@@ -13,6 +13,8 @@ jobs:
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
@@ -20,7 +22,18 @@ jobs:
           cache-dependency-path: requirements-integration.txt
       - name: Install pinned integration dependencies
         run: python -m pip install -r requirements-integration.txt
-      - name: Run governed pinned NLI qualification
+      - name: Run governed pinned NLI qualification and capture evidence
         env:
           HF_HUB_DISABLE_TELEMETRY: "1"
-        run: pytest -m nli_integration test_nli_qualification.py -v
+        run: |
+          python run_nli_qualification.py \
+            --manifest nli_deberta_qualification.json \
+            --output qualification-evidence/nli-deberta.json
+      - name: Retain qualification evidence
+        if: always() && hashFiles('qualification-evidence/nli-deberta.json') != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: nli-qualification-${{ github.event.pull_request.head.sha || github.sha }}
+          path: qualification-evidence/nli-deberta.json
+          if-no-files-found: error
+          retention-days: 90
