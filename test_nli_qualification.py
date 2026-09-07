@@ -26,8 +26,8 @@ class _FakeProvider:
 
 class _ManifestProvider:
     def __init__(self, model_id, revision):
-        self.loaded_model_descriptor = LoadedNLIModelDescriptor(model_id, revision, "huggingface-sequence-classification", ("contradiction", "entailment", "neutral"))
         manifest = load_nli_qualification_manifest(MANIFEST_V2_PATH).payload()
+        self.loaded_model_descriptor = LoadedNLIModelDescriptor(model_id, revision, "huggingface-sequence-classification", tuple(manifest["model"]["labels"]))
         self.labels = {(case["premise"], case["hypothesis"]): case["expected_label"] for case in manifest["cases"]}
 
     def predict(self, premise, hypothesis):
