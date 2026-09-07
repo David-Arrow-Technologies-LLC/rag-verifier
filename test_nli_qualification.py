@@ -1,9 +1,11 @@
 import json
+import re
 
 import pytest
 
 from nli_provider import LoadedNLIModelDescriptor
 from nli_qualification import NLIQualificationRunner, VersionedNLIQualificationManifest, build_nli_qualification_runner, load_nli_qualification_manifest
+from run_nli_qualification import write_qualification_evidence
 
 
 MANIFEST_PATH = "nli_deberta_qualification.json"
@@ -32,6 +34,36 @@ def test_manifest_qualifies_with_matching_observed_provider():
     manifest = load_nli_qualification_manifest(MANIFEST_PATH)
     result = manifest.qualify(NLIQualificationRunner(manifest, _FakeProvider))
     assert result["qualification_record"]["qualification"]["status"] == "PASS"
+    assert len(result["qualification_record"]["case_results"]) == 9
+    assert all(case["expected_label"] == case["predicted_label"] for case in result["qualification_record"]["case_results"])
+
+
+def test_manifest_rejects_forged_case_evidence():
+    manifest = load_nli_qualification_manifest(MANIFEST_PATH)
+    runner = NLIQualificationRunner(manifest, _FakeProvider)
+    record = runner.run()
+    record["case_results"][0]["observed_status"] = "FAIL"
+    with pytest.raises(ValueError, match="decision mismatch|case"):
+        manifest._validate_record(record)
+
+
+def test_evidence_writer_binds_source_runtime_and_digest(tmp_path, monkeypatch):
+    manifest = load_nli_qualification_manifest(MANIFEST_PATH)
+    qualification = manifest.qualify(NLIQualificationRunner(manifest, _FakeProvider))
+    monkeypatch.setattr("run_nli_qualification.qualify_nli_manifest", lambda _path: qualification)
+    monkeypatch.setattr("run_nli_qualification.importlib.metadata.version", lambda package: f"pinned-{package}")
+    output = tmp_path / "evidence.json"
+    evidence = write_qualification_evidence(MANIFEST_PATH, "a" * 40, output)
+    document = json.loads(output.read_text(encoding="utf-8"))
+    assert document == evidence
+    assert document["payload"]["source_revision"] == "a" * 40
+    assert document["payload"]["runtime"]["transformers"] == "pinned-transformers"
+    assert re.fullmatch(r"[0-9a-f]{64}", document["payload_sha256"])
+
+
+def test_evidence_writer_rejects_unpinned_source_revision(tmp_path):
+    with pytest.raises(ValueError, match="source_revision"):
+        write_qualification_evidence(MANIFEST_PATH, "main", tmp_path / "evidence.json")
 
 
 def test_manifest_rejects_payload_tampering():
