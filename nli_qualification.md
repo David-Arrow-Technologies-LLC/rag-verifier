@@ -19,4 +19,6 @@ artifact for 90 days.
 
 Schema v2 adds balanced adversarial categories, per-label accuracy thresholds,
 and critical cases that must all satisfy both their expected label and verifier
-decision. The v1 manifest remains immutable as historical qualification evidence.
+decision. It evaluates a separately pinned stronger DeBERTa base candidate after
+the v1 small model failed the stricter v2 gate. The v1 manifest remains immutable
+as historical qualification evidence.
