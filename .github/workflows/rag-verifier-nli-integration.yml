@@ -27,13 +27,13 @@ jobs:
           HF_HUB_DISABLE_TELEMETRY: "1"
         run: |
           python run_nli_qualification.py \
-            --manifest nli_deberta_qualification.json \
-            --output qualification-evidence/nli-deberta.json
+            --manifest nli_deberta_qualification_v2.json \
+            --output qualification-evidence/nli-deberta-v2.json
       - name: Retain qualification evidence
-        if: always() && hashFiles('qualification-evidence/nli-deberta.json') != ''
+        if: always() && hashFiles('qualification-evidence/nli-deberta-v2.json') != ''
         uses: actions/upload-artifact@v4
         with:
           name: nli-qualification-${{ github.event.pull_request.head.sha || github.sha }}
-          path: qualification-evidence/nli-deberta.json
+          path: qualification-evidence/nli-deberta-v2.json
           if-no-files-found: error
           retention-days: 90
