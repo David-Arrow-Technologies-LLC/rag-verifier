@@ -16,3 +16,7 @@ The gate derives the source revision from a clean, explicitly checked-out PR hea
 recomputes aggregate metrics from the retained case evidence, and fails on the same
 qualification execution that produced the artifact. GitHub Actions retains that
 artifact for 90 days.
+
+Schema v2 adds balanced adversarial categories, per-label accuracy thresholds,
+and critical cases that must all satisfy both their expected label and verifier
+decision. The v1 manifest remains immutable as historical qualification evidence.
