@@ -121,13 +121,51 @@ class VersionedNLIQualificationManifest:
 
     def _validate_record(self, record):
         payload = self.payload()
-        if not isinstance(record, dict) or set(record) != {"model", "benchmark", "policy", "metrics", "qualification"}:
+        if not isinstance(record, dict) or set(record) != {"model", "benchmark", "policy", "case_results", "metrics", "qualification"}:
             raise ValueError("qualification record is invalid")
         if record["model"] != payload["model"] or record["policy"] != payload["policy"]:
             raise ValueError("qualification record identity mismatch")
         expected_benchmark = {"benchmark_id": payload["benchmark_id"], "benchmark_version": payload["benchmark_version"], "case_count": len(payload["cases"])}
         if record["benchmark"] != expected_benchmark:
             raise ValueError("qualification record benchmark mismatch")
+        case_results = record["case_results"]
+        if not isinstance(case_results, list) or len(case_results) != len(payload["cases"]):
+            raise ValueError("qualification record case results are invalid")
+        expected_cases = {case["case_id"]: case for case in payload["cases"]}
+        policy_verifier = RAGVerifier(
+            chunks={},
+            retrieved_ids=set(),
+            nli_provider=object(),
+            pass_threshold=payload["policy"]["pass_threshold"],
+            fail_threshold=payload["policy"]["fail_threshold"],
+        )
+        seen_case_ids = set()
+        for result in case_results:
+            fields = {"case_id", "expected_label", "predicted_label", "expected_status", "observed_status", "scores"}
+            if not isinstance(result, dict) or set(result) != fields:
+                raise ValueError("qualification record case result is invalid")
+            case_id = result["case_id"]
+            if case_id in seen_case_ids or case_id not in expected_cases:
+                raise ValueError("qualification record case identity is invalid")
+            seen_case_ids.add(case_id)
+            expected_case = expected_cases[case_id]
+            if result["expected_label"] != expected_case["expected_label"] or result["expected_status"] != expected_case["expected_status"]:
+                raise ValueError("qualification record expected outcome mismatch")
+            if result["predicted_label"] not in self.LABELS or result["observed_status"] not in self.STATUSES:
+                raise ValueError("qualification record observed outcome is invalid")
+            scores = result["scores"]
+            if not isinstance(scores, dict) or set(scores) != self.LABELS:
+                raise ValueError("qualification record scores are invalid")
+            if any(isinstance(value, bool) or not isinstance(value, (int, float)) or not 0.0 <= value <= 1.0 for value in scores.values()):
+                raise ValueError("qualification record scores are invalid")
+            validation = policy_verifier.validate_nli_scores(scores)
+            if not validation["valid"]:
+                raise ValueError("qualification record scores are invalid")
+            normalized = validation["scores"]
+            predicted_label = max(sorted(normalized), key=normalized.get)
+            observed_status = policy_verifier.classify_nli_scores(normalized)["status"]
+            if result["predicted_label"] != predicted_label or result["observed_status"] != observed_status:
+                raise ValueError("qualification record case decision mismatch")
         metrics = record["metrics"]
         if not isinstance(metrics, dict) or set(metrics) != {"label_accuracy", "decision_accuracy"}:
             raise ValueError("qualification record metrics are invalid")
@@ -164,19 +202,30 @@ class NLIQualificationRunner:
         policy = payload["policy"]
         verifier = RAGVerifier(chunks={}, retrieved_ids=set(), nli_provider=provider, pass_threshold=policy["pass_threshold"], fail_threshold=policy["fail_threshold"])
         label_matches = decision_matches = 0
+        case_results = []
         for case in payload["cases"]:
             scores = provider.predict(case["premise"], case["hypothesis"])
             validation = verifier.validate_nli_scores(scores)
             if not validation["valid"]:
                 raise ValueError("NLI provider output contract violation")
             normalized = validation["scores"]
-            label_matches += max(normalized, key=normalized.get) == case["expected_label"]
-            decision_matches += verifier.classify_nli_scores(normalized)["status"] == case["expected_status"]
+            predicted_label = max(sorted(normalized), key=normalized.get)
+            observed_status = verifier.classify_nli_scores(normalized)["status"]
+            label_matches += predicted_label == case["expected_label"]
+            decision_matches += observed_status == case["expected_status"]
+            case_results.append({
+                "case_id": case["case_id"],
+                "expected_label": case["expected_label"],
+                "predicted_label": predicted_label,
+                "expected_status": case["expected_status"],
+                "observed_status": observed_status,
+                "scores": {label: normalized[label] for label in sorted(normalized)},
+            })
         count = len(payload["cases"])
         metrics = {"label_accuracy": label_matches / count, "decision_accuracy": decision_matches / count}
         thresholds = payload["qualification_thresholds"]
         passed = metrics["label_accuracy"] >= thresholds["minimum_label_accuracy"] and metrics["decision_accuracy"] >= thresholds["minimum_decision_accuracy"]
-        return {"model": dict(model), "benchmark": {"benchmark_id": payload["benchmark_id"], "benchmark_version": payload["benchmark_version"], "case_count": count}, "policy": dict(policy), "metrics": metrics, "qualification": {"status": "PASS" if passed else "FAIL", "reason": "QUALIFICATION_THRESHOLDS_SATISFIED" if passed else "QUALIFICATION_THRESHOLDS_NOT_SATISFIED"}}
+        return {"model": dict(model), "benchmark": {"benchmark_id": payload["benchmark_id"], "benchmark_version": payload["benchmark_version"], "case_count": count}, "policy": dict(policy), "case_results": case_results, "metrics": metrics, "qualification": {"status": "PASS" if passed else "FAIL", "reason": "QUALIFICATION_THRESHOLDS_SATISFIED" if passed else "QUALIFICATION_THRESHOLDS_NOT_SATISFIED"}}
 
 
 def load_nli_qualification_manifest(path):
