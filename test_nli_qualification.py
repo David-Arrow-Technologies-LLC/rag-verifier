@@ -78,6 +78,22 @@ def test_default_runtime_model_matches_active_v2_manifest(monkeypatch):
     }
 
 
+def test_custom_runtime_model_does_not_inherit_default_revision(monkeypatch):
+    observed = {}
+
+    class CapturingProvider:
+        def __init__(self, model_id, revision):
+            observed.update({"model_id": model_id, "model_revision": revision})
+
+    monkeypatch.setattr("verifier.HuggingFaceNLIProvider", CapturingProvider)
+    RAGVerifier(chunks={}, retrieved_ids=set(), model_id="organization/custom-nli")
+
+    assert observed == {
+        "model_id": "organization/custom-nli",
+        "model_revision": None,
+    }
+
+
 def test_v2_runner_emits_stratified_metrics_and_passes_critical_cases():
     manifest = load_nli_qualification_manifest(MANIFEST_V2_PATH)
     result = manifest.qualify(NLIQualificationRunner(manifest, _ManifestProvider))
