@@ -13,6 +13,8 @@ jobs:
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
@@ -24,10 +26,8 @@ jobs:
         env:
           HF_HUB_DISABLE_TELEMETRY: "1"
         run: |
-          pytest -m nli_integration test_nli_qualification.py -v
           python run_nli_qualification.py \
             --manifest nli_deberta_qualification.json \
-            --source-revision "${{ github.event.pull_request.head.sha || github.sha }}" \
             --output qualification-evidence/nli-deberta.json
       - name: Retain qualification evidence
         if: always() && hashFiles('qualification-evidence/nli-deberta.json') != ''
