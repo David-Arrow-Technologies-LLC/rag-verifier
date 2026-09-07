@@ -1,3 +1,14 @@
+from dataclasses import dataclass
+
+
+@dataclass(frozen=True)
+class LoadedModelDescriptor:
+    model_id: str
+    model_revision: str
+    provider_type: str
+    embedding_dimension: int
+
+
 class FakeEmbeddingProvider:
     def __init__(self, embeddings=None):
         self.embeddings = embeddings or {}
@@ -38,6 +49,25 @@ class SentenceTransformerEmbeddingProvider:
             model_id,
             revision=revision
         )
+        dimension = self.model.get_sentence_embedding_dimension()
+        if (
+            isinstance(dimension, bool)
+            or not isinstance(dimension, int)
+            or dimension <= 0
+        ):
+            raise ValueError(
+                "loaded model did not report a valid embedding dimension"
+            )
+        self._loaded_model_descriptor = LoadedModelDescriptor(
+            model_id=model_id,
+            model_revision=revision,
+            provider_type="sentence-transformer",
+            embedding_dimension=dimension,
+        )
+
+    @property
+    def loaded_model_descriptor(self):
+        return self._loaded_model_descriptor
 
     def encode(self, texts):
         return self._encode_with_method(
