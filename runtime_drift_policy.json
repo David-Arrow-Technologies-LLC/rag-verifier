@@ -1,0 +1,27 @@
+{
+  "payload": {
+    "policy_version": "rag-v29-runtime-drift-v1",
+    "schema_version": 1,
+    "triggers": [
+      {"id": "source-revision-changed", "path": "source_revision"},
+      {"id": "release-policy-changed", "path": "release_policy_version"},
+      {"id": "release-manifest-changed", "path": "release_manifest_sha256"},
+      {"id": "workflow-policy-changed", "path": "ci_supply_chain.manifest_sha256"},
+      {"id": "runner-os-changed", "path": "ci_supply_chain.runner_image_os"},
+      {"id": "runner-image-changed", "path": "ci_supply_chain.runner_image_version"},
+      {"id": "dependency-lock-changed", "path": "dependency_lock.sha256"},
+      {"id": "installed-inventory-changed", "path": "dependency_lock.installed_packages_sha256"},
+      {"id": "python-runtime-changed", "path": "runtime.python"},
+      {"id": "sentence-transformers-changed", "path": "runtime.sentence-transformers"},
+      {"id": "torch-changed", "path": "runtime.torch"},
+      {"id": "transformers-changed", "path": "runtime.transformers"},
+      {"id": "tokenizers-changed", "path": "runtime.tokenizers"},
+      {"id": "safetensors-changed", "path": "runtime.safetensors"},
+      {"id": "huggingface-hub-changed", "path": "runtime.huggingface-hub"},
+      {"id": "embedding-manifest-changed", "path": "components.embedding-minilm.manifest_sha256"},
+      {"id": "nli-manifest-changed", "path": "components.nli-deberta-v2.manifest_sha256"},
+      {"id": "qualification-status-changed", "path": "qualification.status"}
+    ]
+  },
+  "payload_sha256": "ee20e740f43ae8ab3a50a9df71fed5e0ff6f63339fa54fc40945c89b826f81d9"
+}
