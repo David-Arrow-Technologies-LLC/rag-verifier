@@ -57,6 +57,17 @@ def test_release_manifest_rejects_payload_tampering(tmp_path):
         load_release_manifest(path)
 
 
+def test_release_manifest_rejects_rehashed_unsupported_policy_version(tmp_path):
+    document = json.loads(open(MANIFEST, encoding="utf-8").read())
+    document["payload"]["release_policy_version"] = "rag-v29-unknown"
+    from nli_qualification import payload_sha256
+    document["payload_sha256"] = payload_sha256(document["payload"])
+    path = tmp_path / "manifest.json"
+    path.write_text(json.dumps(document), encoding="utf-8")
+    with pytest.raises(ValueError, match="unsupported release policy version"):
+        load_release_manifest(path)
+
+
 def test_release_manifest_rejects_component_file_substitution(tmp_path):
     document = json.loads(open(MANIFEST, encoding="utf-8").read())
     document["payload"]["components"][0]["file_sha256"] = "0" * 64
