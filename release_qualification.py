@@ -9,6 +9,7 @@ from supply_chain_policy import file_sha256, reject_duplicate_json_keys
 
 
 RELEASE_MANIFEST_FIELDS = {"schema_version", "release_policy_version", "components", "supply_chain"}
+SUPPORTED_RELEASE_POLICY_VERSION = "rag-v28-unified-release-v1"
 
 
 def load_release_manifest(path, repository_path="."):
@@ -22,6 +23,8 @@ def load_release_manifest(path, repository_path="."):
         raise ValueError("release manifest digest is invalid")
     if payload_sha256(payload) != document["payload_sha256"]:
         raise ValueError("release manifest payload digest mismatch")
+    if payload["release_policy_version"] != SUPPORTED_RELEASE_POLICY_VERSION:
+        raise ValueError("unsupported release policy version")
     root = Path(repository_path)
     component_entries = payload["components"]
     if not isinstance(component_entries, list) or len(component_entries) != 2 or any(not isinstance(item, dict) for item in component_entries):
