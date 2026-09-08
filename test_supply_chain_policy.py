@@ -3,6 +3,7 @@ import json
 
 import pytest
 
+import supply_chain_policy
 from supply_chain_policy import validate_lockfile, validate_repository, validate_requirement_input, validate_workflow_actions
 
 
@@ -49,6 +50,13 @@ def test_local_action_is_rejected_until_recursive_validation_exists(tmp_path):
         validate_workflow_actions(workflow)
 
 
+def test_unapproved_sha_pinned_action_is_rejected(tmp_path):
+    workflow = tmp_path / "workflow.yml"
+    workflow.write_text("steps:\n  - uses: attacker/action@" + "a" * 40 + "\n", encoding="utf-8")
+    with pytest.raises(ValueError, match="provenance allowlist"):
+        validate_workflow_actions(workflow)
+
+
 def test_unhashed_lock_entry_is_rejected(tmp_path):
     lock = tmp_path / "requirements.lock"
     lock.write_text("pytest==9.1.1\n", encoding="utf-8")
@@ -85,22 +93,22 @@ def test_unapproved_requirement_include_is_rejected(tmp_path):
 
 
 @pytest.mark.parametrize("declared", ("pytest==8.4.2", "pytest==9.1.1\nnew-package==1.0.0"))
-def test_stale_or_missing_direct_requirement_is_rejected(tmp_path, declared):
-    _write_valid_repository(tmp_path)
+def test_stale_or_missing_direct_requirement_is_rejected(tmp_path, monkeypatch, declared):
+    _write_valid_repository(tmp_path, monkeypatch)
     (tmp_path / "requirements-ci.txt").write_text(declared + "\n", encoding="utf-8")
     with pytest.raises(ValueError, match="does not match its requirement input"):
         validate_repository(tmp_path)
 
 
-def test_repository_rejects_missing_integration_include(tmp_path):
-    _write_valid_repository(tmp_path)
+def test_repository_rejects_missing_integration_include(tmp_path, monkeypatch):
+    _write_valid_repository(tmp_path, monkeypatch)
     (tmp_path / "requirements-integration.txt").write_text("sentence-transformers==6.0.0\n", encoding="utf-8")
     with pytest.raises(ValueError, match="must include"):
         validate_repository(tmp_path)
 
 
-def test_repository_rejects_conflict_with_included_requirement(tmp_path):
-    _write_valid_repository(tmp_path)
+def test_repository_rejects_conflict_with_included_requirement(tmp_path, monkeypatch):
+    _write_valid_repository(tmp_path, monkeypatch)
     (tmp_path / "requirements-integration.txt").write_text(
         "-r requirements-ci.txt\npytest==8.4.2\nsentence-transformers==6.0.0\n", encoding="utf-8"
     )
@@ -108,20 +116,34 @@ def test_repository_rejects_conflict_with_included_requirement(tmp_path):
         validate_repository(tmp_path)
 
 
-def test_repository_rejects_unhashed_pip_install(tmp_path):
-    _write_valid_repository(tmp_path)
+def test_repository_rejects_unhashed_pip_install(tmp_path, monkeypatch):
+    _write_valid_repository(tmp_path, monkeypatch)
     workflow = tmp_path / ".github" / "workflows" / "rag-verifier-unit.yml"
     workflow.write_text(workflow.read_text(encoding="utf-8") + "  - run: python -m pip install untrusted\n", encoding="utf-8")
-    with pytest.raises(ValueError, match="workflow bytes do not match manifest"):
+    _rewrite_fixture_manifest(tmp_path, workflow)
+    with pytest.raises(ValueError, match="approved policy roots"):
         validate_repository(tmp_path)
 
 
-def _write_valid_repository(root):
+def test_repository_rejects_extra_ungoverned_job_after_manifest_refresh(tmp_path, monkeypatch):
+    _write_valid_repository(tmp_path, monkeypatch)
+    workflow = tmp_path / ".github" / "workflows" / "rag-verifier-unit.yml"
+    workflow.write_text(
+        workflow.read_text(encoding="utf-8")
+        + "  ungoverned:\n    runs-on: self-hosted\n    steps:\n      - run: arbitrary-command\n",
+        encoding="utf-8",
+    )
+    _rewrite_fixture_manifest(tmp_path, workflow)
+    with pytest.raises(ValueError, match="approved policy roots"):
+        validate_repository(tmp_path)
+
+
+def _write_valid_repository(root, monkeypatch):
     workflow_root = root / ".github" / "workflows"
     workflow_root.mkdir(parents=True)
     workflow_root.joinpath("rag-verifier-unit.yml").write_text(
         "steps:\n"
-        "  - uses: actions/checkout@" + "a" * 40 + "\n"
+        "  - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683\n"
         "    with:\n"
         "      ref: ${{ github.event.pull_request.head.sha || github.sha }}\n"
         "  - name: Validate\n"
@@ -166,3 +188,25 @@ def _write_valid_repository(root):
         + "\n",
         encoding="utf-8",
     )
+    installer = root / "install_locked_requirements.py"
+    installer.write_text("# fixture installer\n", encoding="utf-8")
+    monkeypatch.setattr(
+        supply_chain_policy,
+        "APPROVED_WORKFLOW_SHA256",
+        {".github/workflows/rag-verifier-unit.yml": hashlib.sha256(workflow_path.read_bytes()).hexdigest()},
+    )
+    monkeypatch.setattr(
+        supply_chain_policy,
+        "APPROVED_INSTALLER_SHA256",
+        hashlib.sha256(installer.read_bytes()).hexdigest(),
+    )
+
+
+def _rewrite_fixture_manifest(root, workflow_path):
+    manifest_path = root / "ci_supply_chain_manifest.json"
+    document = json.loads(manifest_path.read_text(encoding="utf-8"))
+    document["payload"]["workflows"][0]["sha256"] = hashlib.sha256(workflow_path.read_bytes()).hexdigest()
+    document["payload_sha256"] = hashlib.sha256(
+        json.dumps(document["payload"], sort_keys=True, separators=(",", ":")).encode()
+    ).hexdigest()
+    manifest_path.write_text(json.dumps(document, sort_keys=True) + "\n", encoding="utf-8")
