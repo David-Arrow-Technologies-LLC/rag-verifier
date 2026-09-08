@@ -9,7 +9,7 @@ from supply_chain_policy import validate_lockfile, validate_repository, validate
 
 def test_repository_supply_chain_is_immutable_and_hash_locked():
     result = validate_repository()
-    assert result["workflows"] == 3
+    assert result["workflows"] == 4
     assert result["locks"]["requirements-ci.lock"]["packages"] > 0
     assert result["locks"]["requirements-integration.lock"]["packages"] > 0
 
