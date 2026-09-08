@@ -13,6 +13,17 @@ USES_KEY = re.compile(r"(?:^|[,{\s])[\"']?uses[\"']?\s*:")
 EXACT_HEAD_REF = "ref: ${{ github.event.pull_request.head.sha || github.sha }}"
 VALIDATE_COMMAND = "run: python supply_chain_policy.py"
 WORKFLOW_MANIFEST = "ci_supply_chain_manifest.json"
+APPROVED_ACTIONS = {
+    "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+    "actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065",
+    "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
+}
+APPROVED_WORKFLOW_SHA256 = {
+    ".github/workflows/rag-verifier-minilm-integration.yml": "3a0b047a823939065fee2eec5bfa22bb04b73fc8ac6557b7eb9db3dc4f4e20be",
+    ".github/workflows/rag-verifier-nli-integration.yml": "99ebf7456c1f9afb61d762dccd3ccdda16bf7b36abac66e02a444c8dd0f60c37",
+    ".github/workflows/rag-verifier-unit.yml": "f1e1bc3fc59f84f5741389a4b9a9d8eb03052e7b0f8c586cda12d9c7f0270476",
+}
+APPROVED_INSTALLER_SHA256 = "fe99e6cafd48e61aa4210c13308062f2108abbaea36f228542b0276e0a7c3660"
 
 
 def file_sha256(path):
@@ -38,22 +49,29 @@ def validate_workflow_manifest(root, workflow_paths):
         manifest_path.read_text(encoding="utf-8"),
         object_pairs_hook=reject_duplicate_json_keys,
     )
-    if set(document) != {"payload", "payload_sha256"}:
+    if not isinstance(document, dict) or set(document) != {"payload", "payload_sha256"}:
         raise ValueError("workflow manifest envelope is invalid")
     payload = document["payload"]
+    if not isinstance(payload, dict):
+        raise ValueError("workflow manifest payload is invalid")
     if file_sha256_bytes(canonical_json(payload).encode()) != document["payload_sha256"]:
         raise ValueError("workflow manifest payload digest mismatch")
     if payload.get("schema_version") != 1 or set(payload) != {"schema_version", "workflows"}:
         raise ValueError("workflow manifest payload is invalid")
     expected_paths = {path.relative_to(root).as_posix() for path in workflow_paths}
     entries = payload["workflows"]
-    if not isinstance(entries, list) or {entry.get("path") for entry in entries} != expected_paths:
+    if not isinstance(entries, list) or len(entries) != len(expected_paths) or any(not isinstance(entry, dict) for entry in entries):
+        raise ValueError("workflow manifest entries are invalid")
+    if {entry.get("path") for entry in entries} != expected_paths:
         raise ValueError("workflow manifest paths do not match repository workflows")
     for entry in entries:
         if set(entry) != {"path", "sha256"} or re.fullmatch(r"[0-9a-f]{64}", entry["sha256"]) is None:
             raise ValueError("workflow manifest entry is invalid")
         if file_sha256(root / entry["path"]) != entry["sha256"]:
             raise ValueError(f"workflow bytes do not match manifest: {entry['path']}")
+    observed = {entry["path"]: entry["sha256"] for entry in entries}
+    if observed != APPROVED_WORKFLOW_SHA256:
+        raise ValueError("workflow manifest does not match the approved policy roots")
     return file_sha256(manifest_path)
 
 
@@ -98,6 +116,8 @@ def validate_workflow_actions(path):
             raise ValueError(f"{path}:{line_number}: local actions are not supported by the policy")
         if "@" not in reference or not ACTION_SHA.fullmatch(reference.rsplit("@", 1)[1]):
             raise ValueError(f"{path}:{line_number}: action reference must use a full commit SHA")
+        if reference not in APPROVED_ACTIONS:
+            raise ValueError(f"{path}:{line_number}: action is not in the approved provenance allowlist")
         references.append(reference)
     return references
 
@@ -180,6 +200,8 @@ def validate_repository(root="."):
     if not workflow_paths:
         raise ValueError("repository must contain workflow files")
     workflow_manifest_sha256 = validate_workflow_manifest(root, workflow_paths)
+    if file_sha256(root / "install_locked_requirements.py") != APPROVED_INSTALLER_SHA256:
+        raise ValueError("locked installer does not match the approved policy root")
     for path in workflow_paths:
         validate_workflow_actions(path)
         validate_workflow_commands(path)
