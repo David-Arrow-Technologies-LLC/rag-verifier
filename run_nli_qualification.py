@@ -7,10 +7,10 @@ import subprocess
 from pathlib import Path
 
 from nli_qualification import canonical_payload, payload_sha256, qualify_nli_manifest
-from supply_chain_policy import file_sha256, validate_lockfile
+from supply_chain_policy import file_sha256, read_lock_versions
 
 
-RUNTIME_PACKAGES = ("torch", "transformers", "tokenizers", "safetensors", "huggingface-hub")
+RUNTIME_PACKAGES = ("sentence-transformers", "torch", "transformers", "tokenizers", "safetensors", "huggingface-hub")
 
 
 def resolve_source_revision(repository_path):
@@ -38,7 +38,19 @@ def resolve_source_revision(repository_path):
 def build_qualification_evidence(manifest_path, repository_path="."):
     source_revision = resolve_source_revision(repository_path)
     lock_path = Path(repository_path) / "requirements-integration.lock"
-    validate_lockfile(lock_path)
+    locked_versions = read_lock_versions(lock_path)
+    installed_versions = {}
+    for package, expected_version in locked_versions.items():
+        try:
+            installed_version = importlib.metadata.version(package)
+        except importlib.metadata.PackageNotFoundError as error:
+            raise ValueError(f"locked dependency is not installed: {package}") from error
+        if installed_version != expected_version:
+            raise ValueError(
+                f"installed dependency does not match lock: {package} "
+                f"{installed_version} != {expected_version}"
+            )
+        installed_versions[package] = installed_version
     result = qualify_nli_manifest(manifest_path)
     runtime = {"python": platform.python_version()}
     for package in RUNTIME_PACKAGES:
@@ -49,6 +61,8 @@ def build_qualification_evidence(manifest_path, repository_path="."):
         "dependency_lock": {
             "path": "requirements-integration.lock",
             "sha256": file_sha256(lock_path),
+            "installed_packages": installed_versions,
+            "installed_packages_sha256": payload_sha256(installed_versions),
         },
         "runtime": runtime,
         **result,
