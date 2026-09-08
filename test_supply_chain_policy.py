@@ -1,3 +1,6 @@
+import hashlib
+import json
+
 import pytest
 
 from supply_chain_policy import validate_lockfile, validate_repository, validate_requirement_input, validate_workflow_actions
@@ -109,7 +112,7 @@ def test_repository_rejects_unhashed_pip_install(tmp_path):
     _write_valid_repository(tmp_path)
     workflow = tmp_path / ".github" / "workflows" / "rag-verifier-unit.yml"
     workflow.write_text(workflow.read_text(encoding="utf-8") + "  - run: python -m pip install untrusted\n", encoding="utf-8")
-    with pytest.raises(ValueError, match="hash-locked install"):
+    with pytest.raises(ValueError, match="workflow bytes do not match manifest"):
         validate_repository(tmp_path)
 
 
@@ -124,7 +127,7 @@ def _write_valid_repository(root):
         "  - name: Validate\n"
         "    run: python supply_chain_policy.py\n"
         "  - name: Install\n"
-        "    run: python -m pip install --require-hashes -r requirements-ci.lock\n",
+        "    run: python install_locked_requirements.py requirements-ci.lock\n",
         encoding="utf-8",
     )
     root.joinpath("requirements-ci.txt").write_text("pytest==9.1.1\n", encoding="utf-8")
@@ -138,5 +141,28 @@ def _write_valid_repository(root):
     root.joinpath("requirements-integration.lock").write_text(
         f"pytest==9.1.1 --hash=sha256:{digest}\n"
         f"sentence-transformers==6.0.0 --hash=sha256:{digest}\n",
+        encoding="utf-8",
+    )
+    workflow_path = workflow_root / "rag-verifier-unit.yml"
+    payload = {
+        "schema_version": 1,
+        "workflows": [
+            {
+                "path": ".github/workflows/rag-verifier-unit.yml",
+                "sha256": hashlib.sha256(workflow_path.read_bytes()).hexdigest(),
+            }
+        ],
+    }
+    root.joinpath("ci_supply_chain_manifest.json").write_text(
+        json.dumps(
+            {
+                "payload": payload,
+                "payload_sha256": hashlib.sha256(
+                    json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()
+                ).hexdigest(),
+            },
+            sort_keys=True,
+        )
+        + "\n",
         encoding="utf-8",
     )
