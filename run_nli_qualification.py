@@ -1,15 +1,17 @@
 import argparse
 import importlib.metadata
 import json
+import os
 import platform
 import re
 import subprocess
 from pathlib import Path
 
 from nli_qualification import canonical_payload, payload_sha256, qualify_nli_manifest
+from supply_chain_policy import WORKFLOW_MANIFEST, file_sha256, read_lock_versions, validate_repository
 
 
-RUNTIME_PACKAGES = ("torch", "transformers", "tokenizers", "safetensors", "huggingface-hub")
+RUNTIME_PACKAGES = ("sentence-transformers", "torch", "transformers", "tokenizers", "safetensors", "huggingface-hub")
 
 
 def resolve_source_revision(repository_path):
@@ -36,13 +38,40 @@ def resolve_source_revision(repository_path):
 
 def build_qualification_evidence(manifest_path, repository_path="."):
     source_revision = resolve_source_revision(repository_path)
+    supply_chain = validate_repository(repository_path)
+    lock_path = Path(repository_path) / "requirements-integration.lock"
+    locked_versions = read_lock_versions(lock_path)
+    installed_versions = {}
+    for package, expected_version in locked_versions.items():
+        try:
+            installed_version = importlib.metadata.version(package)
+        except importlib.metadata.PackageNotFoundError as error:
+            raise ValueError(f"locked dependency is not installed: {package}") from error
+        if installed_version != expected_version:
+            raise ValueError(
+                f"installed dependency does not match lock: {package} "
+                f"{installed_version} != {expected_version}"
+            )
+        installed_versions[package] = installed_version
     result = qualify_nli_manifest(manifest_path)
     runtime = {"python": platform.python_version()}
     for package in RUNTIME_PACKAGES:
         runtime[package] = importlib.metadata.version(package)
     payload = {
-        "artifact_schema_version": 1,
+        "artifact_schema_version": 2,
         "source_revision": source_revision,
+        "ci_supply_chain": {
+            "manifest_path": WORKFLOW_MANIFEST,
+            "manifest_sha256": supply_chain["workflow_manifest_sha256"],
+            "runner_image_os": os.environ.get("ImageOS", "unavailable"),
+            "runner_image_version": os.environ.get("ImageVersion", "unavailable"),
+        },
+        "dependency_lock": {
+            "path": "requirements-integration.lock",
+            "sha256": file_sha256(lock_path),
+            "installed_packages": installed_versions,
+            "installed_packages_sha256": payload_sha256(installed_versions),
+        },
         "runtime": runtime,
         **result,
     }

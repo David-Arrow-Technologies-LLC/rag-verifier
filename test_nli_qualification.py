@@ -1,11 +1,14 @@
+import hashlib
 import json
 import re
+from pathlib import Path
 
 import pytest
 
 from nli_provider import DEFAULT_NLI_MODEL_ID, DEFAULT_NLI_MODEL_REVISION, LoadedNLIModelDescriptor
 from nli_qualification import NLIQualificationRunner, VersionedNLIQualificationManifest, build_nli_qualification_runner, load_nli_qualification_manifest
-from run_nli_qualification import main, resolve_source_revision, write_qualification_evidence
+from run_nli_qualification import build_qualification_evidence, main, resolve_source_revision, write_qualification_evidence
+from supply_chain_policy import read_lock_versions
 from verifier import RAGVerifier
 
 
@@ -149,15 +152,32 @@ def test_evidence_writer_binds_source_runtime_and_digest(tmp_path, monkeypatch):
     manifest = load_nli_qualification_manifest(MANIFEST_PATH)
     qualification = manifest.qualify(NLIQualificationRunner(manifest, _FakeProvider))
     monkeypatch.setattr("run_nli_qualification.qualify_nli_manifest", lambda _path: qualification)
-    monkeypatch.setattr("run_nli_qualification.importlib.metadata.version", lambda package: f"pinned-{package}")
+    locked_versions = read_lock_versions("requirements-integration.lock")
+    monkeypatch.setattr("run_nli_qualification.importlib.metadata.version", locked_versions.__getitem__)
     monkeypatch.setattr("run_nli_qualification.resolve_source_revision", lambda _path: "a" * 40)
     output = tmp_path / "evidence.json"
     evidence = write_qualification_evidence(MANIFEST_PATH, output)
     document = json.loads(output.read_text(encoding="utf-8"))
     assert document == evidence
     assert document["payload"]["source_revision"] == "a" * 40
-    assert document["payload"]["runtime"]["transformers"] == "pinned-transformers"
+    assert document["payload"]["artifact_schema_version"] == 2
+    assert document["payload"]["dependency_lock"]["path"] == "requirements-integration.lock"
+    assert document["payload"]["dependency_lock"]["sha256"] == hashlib.sha256(
+        Path("requirements-integration.lock").read_bytes()
+    ).hexdigest()
+    assert document["payload"]["runtime"]["transformers"] == locked_versions["transformers"]
+    assert document["payload"]["dependency_lock"]["installed_packages"] == locked_versions
+    assert re.fullmatch(
+        r"[0-9a-f]{64}", document["payload"]["dependency_lock"]["installed_packages_sha256"]
+    )
     assert re.fullmatch(r"[0-9a-f]{64}", document["payload_sha256"])
+
+
+def test_evidence_rejects_installed_environment_that_diverges_from_lock(monkeypatch):
+    monkeypatch.setattr("run_nli_qualification.resolve_source_revision", lambda _path: "a" * 40)
+    monkeypatch.setattr("run_nli_qualification.importlib.metadata.version", lambda _package: "0.0.0")
+    with pytest.raises(ValueError, match="does not match lock"):
+        build_qualification_evidence(MANIFEST_PATH)
 
 
 def test_source_revision_rejects_dirty_worktree(monkeypatch):
