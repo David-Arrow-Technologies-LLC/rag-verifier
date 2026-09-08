@@ -12,10 +12,53 @@ PINNED_REQUIREMENT = re.compile(
 USES_KEY = re.compile(r"(?:^|[,{\s])[\"']?uses[\"']?\s*:")
 EXACT_HEAD_REF = "ref: ${{ github.event.pull_request.head.sha || github.sha }}"
 VALIDATE_COMMAND = "run: python supply_chain_policy.py"
+WORKFLOW_MANIFEST = "ci_supply_chain_manifest.json"
 
 
 def file_sha256(path):
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()
+
+
+def canonical_json(value):
+    return json.dumps(value, sort_keys=True, separators=(",", ":"))
+
+
+def reject_duplicate_json_keys(pairs):
+    value = {}
+    for key, item in pairs:
+        if key in value:
+            raise ValueError(f"duplicate JSON key: {key}")
+        value[key] = item
+    return value
+
+
+def validate_workflow_manifest(root, workflow_paths):
+    manifest_path = root / WORKFLOW_MANIFEST
+    document = json.loads(
+        manifest_path.read_text(encoding="utf-8"),
+        object_pairs_hook=reject_duplicate_json_keys,
+    )
+    if set(document) != {"payload", "payload_sha256"}:
+        raise ValueError("workflow manifest envelope is invalid")
+    payload = document["payload"]
+    if file_sha256_bytes(canonical_json(payload).encode()) != document["payload_sha256"]:
+        raise ValueError("workflow manifest payload digest mismatch")
+    if payload.get("schema_version") != 1 or set(payload) != {"schema_version", "workflows"}:
+        raise ValueError("workflow manifest payload is invalid")
+    expected_paths = {path.relative_to(root).as_posix() for path in workflow_paths}
+    entries = payload["workflows"]
+    if not isinstance(entries, list) or {entry.get("path") for entry in entries} != expected_paths:
+        raise ValueError("workflow manifest paths do not match repository workflows")
+    for entry in entries:
+        if set(entry) != {"path", "sha256"} or re.fullmatch(r"[0-9a-f]{64}", entry["sha256"]) is None:
+            raise ValueError("workflow manifest entry is invalid")
+        if file_sha256(root / entry["path"]) != entry["sha256"]:
+            raise ValueError(f"workflow bytes do not match manifest: {entry['path']}")
+    return file_sha256(manifest_path)
+
+
+def file_sha256_bytes(value):
+    return hashlib.sha256(value).hexdigest()
 
 
 def normalize_package_name(name):
@@ -65,18 +108,15 @@ def validate_workflow_commands(path):
     if stripped.count(VALIDATE_COMMAND) != 1:
         raise ValueError(f"{path}: workflow must run the supply-chain validator exactly once")
     expected_lock = "requirements-ci.lock" if Path(path).name == "rag-verifier-unit.yml" else "requirements-integration.lock"
-    expected_install = f"run: python -m pip install --require-hashes -r {expected_lock}"
-    install_lines = [
-        (index, line.strip())
-        for index, line in enumerate(lines)
-        if re.search(r"\bpip(?:3)?\s+install\b", line)
-    ]
-    if install_lines != [(stripped.index(expected_install), expected_install)]:
-        raise ValueError(f"{path}: workflow must use only the approved hash-locked install command")
+    expected_install = f"run: python install_locked_requirements.py {expected_lock}"
+    if stripped.count(expected_install) != 1:
+        raise ValueError(f"{path}: workflow must use the approved locked-install wrapper exactly once")
     if stripped.index(VALIDATE_COMMAND) > stripped.index(expected_install):
         raise ValueError(f"{path}: supply-chain validation must precede dependency installation")
     if stripped.count(EXACT_HEAD_REF) != 1:
         raise ValueError(f"{path}: workflow must check out the exact event head")
+    if any(re.match(r"^(?:container|services):", line) for line in stripped):
+        raise ValueError(f"{path}: workflow containers and services are not supported")
 
 
 def read_requirement_input(path):
@@ -139,6 +179,7 @@ def validate_repository(root="."):
     workflow_paths = sorted(set(workflow_root.glob("*.yml")) | set(workflow_root.glob("*.yaml")))
     if not workflow_paths:
         raise ValueError("repository must contain workflow files")
+    workflow_manifest_sha256 = validate_workflow_manifest(root, workflow_paths)
     for path in workflow_paths:
         validate_workflow_actions(path)
         validate_workflow_commands(path)
@@ -163,7 +204,11 @@ def validate_repository(root="."):
             if versions.get(package) != version:
                 raise ValueError(f"{name}: {package} does not match its requirement input")
         locks[name] = {"packages": len(versions), "sha256": file_sha256(path)}
-    return {"workflows": len(workflow_paths), "locks": locks}
+    return {
+        "workflows": len(workflow_paths),
+        "workflow_manifest_sha256": workflow_manifest_sha256,
+        "locks": locks,
+    }
 
 
 if __name__ == "__main__":
