@@ -1,0 +1,20 @@
+{
+  "payload": {
+    "schema_version": 1,
+    "workflows": [
+      {
+        "path": ".github/workflows/rag-verifier-minilm-integration.yml",
+        "sha256": "3a0b047a823939065fee2eec5bfa22bb04b73fc8ac6557b7eb9db3dc4f4e20be"
+      },
+      {
+        "path": ".github/workflows/rag-verifier-nli-integration.yml",
+        "sha256": "99ebf7456c1f9afb61d762dccd3ccdda16bf7b36abac66e02a444c8dd0f60c37"
+      },
+      {
+        "path": ".github/workflows/rag-verifier-unit.yml",
+        "sha256": "f1e1bc3fc59f84f5741389a4b9a9d8eb03052e7b0f8c586cda12d9c7f0270476"
+      }
+    ]
+  },
+  "payload_sha256": "b6289e09642e26590575d2eb182b5f05f1ef45bab3395db9a753cafaf4fde2a3"
+}
