@@ -7,6 +7,7 @@ import subprocess
 from pathlib import Path
 
 from nli_qualification import canonical_payload, payload_sha256, qualify_nli_manifest
+from supply_chain_policy import file_sha256, validate_lockfile
 
 
 RUNTIME_PACKAGES = ("torch", "transformers", "tokenizers", "safetensors", "huggingface-hub")
@@ -36,13 +37,19 @@ def resolve_source_revision(repository_path):
 
 def build_qualification_evidence(manifest_path, repository_path="."):
     source_revision = resolve_source_revision(repository_path)
+    lock_path = Path(repository_path) / "requirements-integration.lock"
+    validate_lockfile(lock_path)
     result = qualify_nli_manifest(manifest_path)
     runtime = {"python": platform.python_version()}
     for package in RUNTIME_PACKAGES:
         runtime[package] = importlib.metadata.version(package)
     payload = {
-        "artifact_schema_version": 1,
+        "artifact_schema_version": 2,
         "source_revision": source_revision,
+        "dependency_lock": {
+            "path": "requirements-integration.lock",
+            "sha256": file_sha256(lock_path),
+        },
         "runtime": runtime,
         **result,
     }
