@@ -7,9 +7,11 @@ with `--require-hashes`.
 
 `supply_chain_policy.py` is standard-library-only and runs before third-party
 dependency installation. It fails closed on floating action references,
-non-exact dependency inputs, unapproved includes, unhashed lock entries, empty
-locks, or missing workflows. The real-NLI evidence records the exact integration
-lock filename and digest used by the qualifying source revision.
+unsupported YAML action mappings, non-exact dependency inputs, input/lock drift,
+unapproved includes, unhashed lock entries, empty locks, or missing workflows.
+The real-NLI evidence records the exact integration lock filename and digest and
+fails unless every locked distribution is installed at its declared version; the
+verified installed-package inventory and its digest are retained in the artifact.
 
 To update dependencies, edit the applicable `.txt` input, regenerate both locks
 with a reviewed resolver, run the policy and complete test suite, and require a
