@@ -1,5 +1,7 @@
+import hashlib
 import json
 import re
+from pathlib import Path
 
 import pytest
 
@@ -156,6 +158,11 @@ def test_evidence_writer_binds_source_runtime_and_digest(tmp_path, monkeypatch):
     document = json.loads(output.read_text(encoding="utf-8"))
     assert document == evidence
     assert document["payload"]["source_revision"] == "a" * 40
+    assert document["payload"]["artifact_schema_version"] == 2
+    assert document["payload"]["dependency_lock"] == {
+        "path": "requirements-integration.lock",
+        "sha256": hashlib.sha256(Path("requirements-integration.lock").read_bytes()).hexdigest(),
+    }
     assert document["payload"]["runtime"]["transformers"] == "pinned-transformers"
     assert re.fullmatch(r"[0-9a-f]{64}", document["payload_sha256"])
 
