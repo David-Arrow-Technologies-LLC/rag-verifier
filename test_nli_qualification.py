@@ -161,10 +161,10 @@ def test_evidence_writer_binds_source_runtime_and_digest(tmp_path, monkeypatch):
     assert document == evidence
     assert document["payload"]["source_revision"] == "a" * 40
     assert document["payload"]["artifact_schema_version"] == 2
-    assert document["payload"]["dependency_lock"] == {
-        "path": "requirements-integration.lock",
-        "sha256": hashlib.sha256(Path("requirements-integration.lock").read_bytes()).hexdigest(),
-    }
+    assert document["payload"]["dependency_lock"]["path"] == "requirements-integration.lock"
+    assert document["payload"]["dependency_lock"]["sha256"] == hashlib.sha256(
+        Path("requirements-integration.lock").read_bytes()
+    ).hexdigest()
     assert document["payload"]["runtime"]["transformers"] == locked_versions["transformers"]
     assert document["payload"]["dependency_lock"]["installed_packages"] == locked_versions
     assert re.fullmatch(
