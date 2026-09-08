@@ -11,10 +11,14 @@
         "sha256": "99ebf7456c1f9afb61d762dccd3ccdda16bf7b36abac66e02a444c8dd0f60c37"
       },
       {
+        "path": ".github/workflows/rag-verifier-release-qualification.yml",
+        "sha256": "d2c7fa3125c10d7c69ccb2edb3fff25d6d30586e489bdbec61eeb305d76d19a6"
+      },
+      {
         "path": ".github/workflows/rag-verifier-unit.yml",
         "sha256": "f1e1bc3fc59f84f5741389a4b9a9d8eb03052e7b0f8c586cda12d9c7f0270476"
       }
     ]
   },
-  "payload_sha256": "b6289e09642e26590575d2eb182b5f05f1ef45bab3395db9a753cafaf4fde2a3"
+  "payload_sha256": "31f4830e6ed3bcc4116d3902784ba390c8fd71871de9247c5462b73dbfe8ae0f"
 }
