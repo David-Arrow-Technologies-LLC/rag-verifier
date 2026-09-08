@@ -1,13 +1,14 @@
 import argparse
 import importlib.metadata
 import json
+import os
 import platform
 import re
 import subprocess
 from pathlib import Path
 
 from nli_qualification import canonical_payload, payload_sha256, qualify_nli_manifest
-from supply_chain_policy import file_sha256, read_lock_versions
+from supply_chain_policy import WORKFLOW_MANIFEST, file_sha256, read_lock_versions, validate_repository
 
 
 RUNTIME_PACKAGES = ("sentence-transformers", "torch", "transformers", "tokenizers", "safetensors", "huggingface-hub")
@@ -37,6 +38,7 @@ def resolve_source_revision(repository_path):
 
 def build_qualification_evidence(manifest_path, repository_path="."):
     source_revision = resolve_source_revision(repository_path)
+    supply_chain = validate_repository(repository_path)
     lock_path = Path(repository_path) / "requirements-integration.lock"
     locked_versions = read_lock_versions(lock_path)
     installed_versions = {}
@@ -58,6 +60,12 @@ def build_qualification_evidence(manifest_path, repository_path="."):
     payload = {
         "artifact_schema_version": 2,
         "source_revision": source_revision,
+        "ci_supply_chain": {
+            "manifest_path": WORKFLOW_MANIFEST,
+            "manifest_sha256": supply_chain["workflow_manifest_sha256"],
+            "runner_image_os": os.environ.get("ImageOS", "unavailable"),
+            "runner_image_version": os.environ.get("ImageVersion", "unavailable"),
+        },
         "dependency_lock": {
             "path": "requirements-integration.lock",
             "sha256": file_sha256(lock_path),
