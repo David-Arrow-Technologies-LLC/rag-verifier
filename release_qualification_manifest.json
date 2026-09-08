@@ -1,0 +1,31 @@
+{
+  "payload": {
+    "components": [
+      {
+        "file_sha256": "4c361604babfe94824b526f93c6b6818b52e8ab2a61deb8568068daf9fa2e082",
+        "manifest_path": "healthcare_minilm_qualification.json",
+        "name": "embedding-minilm",
+        "payload_sha256": "ead2869961738f0188a076915317b2e53e562fc84ce3dc9860b9122f30d5bd41",
+        "required_status": "PASS"
+      },
+      {
+        "file_sha256": "f8729331473469e1efbdc7ee1c161dbd84c48f5c3e8cb624d2afdbf5c51753d0",
+        "manifest_path": "nli_deberta_qualification_v2.json",
+        "name": "nli-deberta-v2",
+        "payload_sha256": "5f2f90d865c067f32ce902fe0fa01cc7508b81a6f3aca35b800619f55c5b3b13",
+        "required_status": "PASS"
+      }
+    ],
+    "release_policy_version": "rag-v28-unified-release-v1",
+    "schema_version": 1,
+    "supply_chain": {
+      "lock_sha256": {
+        "requirements-ci.lock": "c6947e163b05f35186ccf2c193b434b0a9e1cce9c0dd97e1eea8294c953f59ba",
+        "requirements-integration.lock": "ac2ed0b77ff9a04e1a6c62b96b5fc86106c3cdf5a30d0853bd5ca925f631fac9"
+      },
+      "workflow_manifest_path": "ci_supply_chain_manifest.json",
+      "workflow_manifest_sha256": "1ed205d30289090cb6bbaea146e60b99fbc5b4348d127dce0824f2d05c78fd77"
+    }
+  },
+  "payload_sha256": "c609f60acb2c73704fbf35d3b23acd71bca5dc369811d027b5bfa02c2cda08cb"
+}
