@@ -22,7 +22,7 @@ APPROVED_WORKFLOW_SHA256 = {
     ".github/workflows/rag-verifier-minilm-integration.yml": "3a0b047a823939065fee2eec5bfa22bb04b73fc8ac6557b7eb9db3dc4f4e20be",
     ".github/workflows/rag-verifier-nli-integration.yml": "99ebf7456c1f9afb61d762dccd3ccdda16bf7b36abac66e02a444c8dd0f60c37",
     ".github/workflows/rag-verifier-release-qualification.yml": "d2c7fa3125c10d7c69ccb2edb3fff25d6d30586e489bdbec61eeb305d76d19a6",
-    ".github/workflows/rag-verifier-unit.yml": "f1e1bc3fc59f84f5741389a4b9a9d8eb03052e7b0f8c586cda12d9c7f0270476",
+    ".github/workflows/rag-verifier-unit.yml": "5ae3fe7d6dcdb76b08cd7510128d7322fba0472efc15be679f513d6898b122b9",
 }
 APPROVED_INSTALLER_SHA256 = "fe99e6cafd48e61aa4210c13308062f2108abbaea36f228542b0276e0a7c3660"
 
