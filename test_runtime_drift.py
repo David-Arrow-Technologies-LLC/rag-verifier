@@ -99,6 +99,17 @@ def test_rehashed_policy_cannot_remove_a_trigger(tmp_path):
         load_runtime_drift_policy(path)
 
 
+@pytest.mark.parametrize("invalid_version", [True, 1.0], ids=["boolean", "float"])
+def test_rehashed_non_integer_policy_schema_version_fails_closed(tmp_path, invalid_version):
+    document = json.loads(open(POLICY, encoding="utf-8").read())
+    document["payload"]["schema_version"] = invalid_version
+    document["payload_sha256"] = payload_sha256(document["payload"])
+    path = tmp_path / "policy.json"
+    _write(path, document)
+    with pytest.raises(ValueError, match="runtime drift policy payload is invalid"):
+        load_runtime_drift_policy(path)
+
+
 def test_identical_runtime_remains_current(tmp_path):
     evidence = _evidence()
     baseline = tmp_path / "baseline.json"
@@ -205,6 +216,20 @@ def test_rehashed_truncated_release_evidence_fails_closed(tmp_path):
     _write(observed, truncated)
     with pytest.raises(ValueError, match="payload schema is invalid"):
         evaluate_runtime_drift(POLICY, baseline, observed, truncated["payload_sha256"])
+
+
+@pytest.mark.parametrize("invalid_version", [True, 1.0], ids=["boolean", "float"])
+def test_rehashed_non_integer_release_schema_version_fails_closed(tmp_path, invalid_version):
+    baseline_document = _evidence()
+    observed_document = copy.deepcopy(baseline_document)
+    observed_document["payload"]["artifact_schema_version"] = invalid_version
+    observed_document["payload_sha256"] = payload_sha256(observed_document["payload"])
+    baseline = tmp_path / "baseline.json"
+    observed = tmp_path / "observed.json"
+    _write(baseline, baseline_document)
+    _write(observed, observed_document)
+    with pytest.raises(ValueError, match="payload schema is invalid"):
+        _evaluate(baseline, observed)
 
 
 def test_rehashed_alternate_workflow_manifest_path_fails_closed(tmp_path):
