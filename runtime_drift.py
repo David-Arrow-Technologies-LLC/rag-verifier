@@ -86,7 +86,7 @@ def _validate_release_evidence(document, label):
         "manifest_path", "manifest_sha256", "runner_image_os", "runner_image_version"
     }:
         raise ValueError(f"{label} CI supply-chain evidence is invalid")
-    if not isinstance(supply["manifest_path"], str) or not supply["manifest_path"] or not _is_digest(supply["manifest_sha256"]):
+    if supply["manifest_path"] != "ci_supply_chain_manifest.json" or not _is_digest(supply["manifest_sha256"]):
         raise ValueError(f"{label} CI supply-chain identity is invalid")
     unknown_runner_values = {"unavailable", "unknown", "none", "null", "n/a", "na", "unset", "missing"}
     for field in ("runner_image_os", "runner_image_version"):
