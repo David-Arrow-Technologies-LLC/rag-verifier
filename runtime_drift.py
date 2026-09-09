@@ -45,7 +45,11 @@ EXPECTED_TRIGGERS = (
 
 
 def canonical_payload(value):
-    return json.dumps(value, sort_keys=True, separators=(",", ":"))
+    return json.dumps(value, sort_keys=True, separators=(",", ":"), allow_nan=False)
+
+
+def _reject_non_finite_json_constant(value):
+    raise ValueError(f"non-finite JSON constant is invalid: {value}")
 
 
 def payload_sha256(value):
@@ -53,7 +57,11 @@ def payload_sha256(value):
 
 
 def _load_envelope(path, label):
-    document = json.loads(Path(path).read_text(encoding="utf-8"), object_pairs_hook=reject_duplicate_json_keys)
+    document = json.loads(
+        Path(path).read_text(encoding="utf-8"),
+        object_pairs_hook=reject_duplicate_json_keys,
+        parse_constant=_reject_non_finite_json_constant,
+    )
     if not isinstance(document, dict) or set(document) != {"payload", "payload_sha256"}:
         raise ValueError(f"{label} envelope is invalid")
     if not isinstance(document["payload"], dict):
