@@ -3,7 +3,14 @@ import json
 
 import pytest
 
-from runtime_drift import DECISION_CURRENT, DECISION_REQUALIFY, evaluate_runtime_drift, load_runtime_drift_policy, payload_sha256
+from runtime_drift import (
+    DECISION_CURRENT,
+    DECISION_REQUALIFY,
+    canonical_payload,
+    evaluate_runtime_drift,
+    load_runtime_drift_policy,
+    payload_sha256,
+)
 
 
 POLICY = "runtime_drift_policy.json"
@@ -330,3 +337,53 @@ def test_fabricated_rehashed_baseline_requires_trusted_digest(tmp_path):
     _write(observed, fabricated)
     with pytest.raises(ValueError, match="does not match trusted digest"):
         evaluate_runtime_drift(POLICY, baseline, observed, evidence["payload_sha256"])
+
+
+@pytest.mark.parametrize(
+    "non_finite",
+    [float("nan"), float("inf"), float("-inf")],
+    ids=["nan", "positive-infinity", "negative-infinity"],
+)
+def test_canonical_payload_rejects_non_finite_numbers(non_finite):
+    with pytest.raises(ValueError, match="Out of range float values"):
+        canonical_payload({"value": non_finite})
+
+
+@pytest.mark.parametrize(
+    "non_finite",
+    [float("nan"), float("inf"), float("-inf")],
+    ids=["nan", "positive-infinity", "negative-infinity"],
+)
+def test_non_finite_release_evidence_fails_closed(tmp_path, non_finite):
+    baseline_document = _evidence()
+    observed_document = copy.deepcopy(baseline_document)
+    observed_document["payload"]["components"]["embedding-minilm"]["qualification_record"]["metrics"][
+        "recall_at_k"
+    ] = non_finite
+    observed_document["payload_sha256"] = "0" * 64
+    baseline = tmp_path / "baseline.json"
+    observed = tmp_path / "observed.json"
+    _write(baseline, baseline_document)
+    _write(observed, observed_document)
+    with pytest.raises(ValueError, match="non-finite JSON constant is invalid"):
+        evaluate_runtime_drift(
+            POLICY,
+            baseline,
+            observed,
+            baseline_document["payload_sha256"],
+        )
+
+
+@pytest.mark.parametrize(
+    "non_finite",
+    [float("nan"), float("inf"), float("-inf")],
+    ids=["nan", "positive-infinity", "negative-infinity"],
+)
+def test_non_finite_policy_fails_closed(tmp_path, non_finite):
+    document = json.loads(open(POLICY, encoding="utf-8").read())
+    document["payload"]["schema_version"] = non_finite
+    document["payload_sha256"] = "0" * 64
+    path = tmp_path / "policy.json"
+    _write(path, document)
+    with pytest.raises(ValueError, match="non-finite JSON constant is invalid"):
+        load_runtime_drift_policy(path)
