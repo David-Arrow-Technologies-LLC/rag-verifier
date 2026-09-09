@@ -10,9 +10,15 @@ def main():
     parser.add_argument("--policy", required=True)
     parser.add_argument("--qualified-evidence", required=True)
     parser.add_argument("--observed-evidence", required=True)
+    parser.add_argument("--qualified-evidence-sha256", required=True)
     parser.add_argument("--output", required=True)
     args = parser.parse_args()
-    result = evaluate_runtime_drift(args.policy, args.qualified_evidence, args.observed_evidence)
+    result = evaluate_runtime_drift(
+        args.policy,
+        args.qualified_evidence,
+        args.observed_evidence,
+        args.qualified_evidence_sha256,
+    )
     output = Path(args.output)
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(canonical_payload(result) + "\n", encoding="utf-8")
