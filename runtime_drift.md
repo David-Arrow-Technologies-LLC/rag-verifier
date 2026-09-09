@@ -14,6 +14,9 @@ tampering, duplicate JSON keys, and non-PASS baselines fail closed.
 Truncated release schemas, inconsistent aggregate/component decisions, altered
 installed inventories, and missing or `unavailable` runner identities also fail
 closed before comparison.
+The complete MiniLM and NLI qualification records are monitored as canonical
+objects, so any record change triggers requalification without copying large
+case-level records into the drift result.
 
 After successful requalification, the newly produced PASS bundle becomes the
 new baseline. This is engineering release evidence and does not establish
