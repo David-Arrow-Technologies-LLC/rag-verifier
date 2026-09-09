@@ -302,6 +302,23 @@ def test_complete_component_record_change_requires_requalification(tmp_path):
     assert set(trigger[0]) == {"id", "path", "qualified_sha256", "observed_sha256"}
 
 
+@pytest.mark.parametrize("qualified_value", [1, 1.0], ids=["integer", "float"])
+def test_nested_boolean_number_alias_requires_requalification(tmp_path, qualified_value):
+    baseline_document = _evidence()
+    baseline_document["payload"]["components"]["embedding-minilm"]["qualification_record"]["metrics"]["recall_at_k"] = qualified_value
+    baseline_document["payload_sha256"] = payload_sha256(baseline_document["payload"])
+    observed_document = copy.deepcopy(baseline_document)
+    observed_document["payload"]["components"]["embedding-minilm"]["qualification_record"]["metrics"]["recall_at_k"] = True
+    observed_document["payload_sha256"] = payload_sha256(observed_document["payload"])
+    baseline = tmp_path / "baseline.json"
+    observed = tmp_path / "observed.json"
+    _write(baseline, baseline_document)
+    _write(observed, observed_document)
+    result = _evaluate(baseline, observed)
+    assert result["payload"]["decision"] == DECISION_REQUALIFY
+    assert [item["id"] for item in result["payload"]["triggers"]] == ["embedding-record-changed"]
+
+
 def test_fabricated_rehashed_baseline_requires_trusted_digest(tmp_path):
     evidence = _evidence()
     fabricated = copy.deepcopy(evidence)
