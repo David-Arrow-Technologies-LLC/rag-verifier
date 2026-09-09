@@ -72,7 +72,11 @@ def _is_digest(value, length=64):
 
 def _validate_release_evidence(document, label):
     payload = document["payload"]
-    if set(payload) != RELEASE_FIELDS or payload["artifact_schema_version"] != 1:
+    if (
+        set(payload) != RELEASE_FIELDS
+        or type(payload["artifact_schema_version"]) is not int
+        or payload["artifact_schema_version"] != 1
+    ):
         raise ValueError(f"{label} payload schema is invalid")
     if not _is_digest(payload["source_revision"], 40):
         raise ValueError(f"{label} source revision is invalid")
@@ -177,7 +181,11 @@ def _validate_release_evidence(document, label):
 def load_runtime_drift_policy(path):
     document = _load_envelope(path, "runtime drift policy")
     payload = document["payload"]
-    if set(payload) != POLICY_FIELDS or payload["schema_version"] != 1:
+    if (
+        set(payload) != POLICY_FIELDS
+        or type(payload["schema_version"]) is not int
+        or payload["schema_version"] != 1
+    ):
         raise ValueError("runtime drift policy payload is invalid")
     if payload["policy_version"] != SUPPORTED_POLICY_VERSION:
         raise ValueError("unsupported runtime drift policy version")
