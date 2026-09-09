@@ -207,6 +207,19 @@ def test_rehashed_truncated_release_evidence_fails_closed(tmp_path):
         evaluate_runtime_drift(POLICY, baseline, observed, truncated["payload_sha256"])
 
 
+def test_rehashed_alternate_workflow_manifest_path_fails_closed(tmp_path):
+    baseline_document = _evidence()
+    observed_document = copy.deepcopy(baseline_document)
+    observed_document["payload"]["ci_supply_chain"]["manifest_path"] = "alternate.json"
+    observed_document["payload_sha256"] = payload_sha256(observed_document["payload"])
+    baseline = tmp_path / "baseline.json"
+    observed = tmp_path / "observed.json"
+    _write(baseline, baseline_document)
+    _write(observed, observed_document)
+    with pytest.raises(ValueError, match="CI supply-chain identity is invalid"):
+        _evaluate(baseline, observed)
+
+
 def test_unavailable_runner_identity_fails_closed(tmp_path):
     evidence = _evidence()
     evidence["payload"]["ci_supply_chain"]["runner_image_version"] = "unavailable"
