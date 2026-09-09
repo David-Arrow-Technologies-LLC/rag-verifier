@@ -19,9 +19,11 @@
       {"id": "safetensors-changed", "path": "runtime.safetensors"},
       {"id": "huggingface-hub-changed", "path": "runtime.huggingface-hub"},
       {"id": "embedding-manifest-changed", "path": "components.embedding-minilm.manifest_sha256"},
+      {"id": "embedding-record-changed", "path": "components.embedding-minilm.qualification_record"},
       {"id": "nli-manifest-changed", "path": "components.nli-deberta-v2.manifest_sha256"},
+      {"id": "nli-record-changed", "path": "components.nli-deberta-v2.qualification_record"},
       {"id": "qualification-status-changed", "path": "qualification.status"}
     ]
   },
-  "payload_sha256": "ee20e740f43ae8ab3a50a9df71fed5e0ff6f63339fa54fc40945c89b826f81d9"
+  "payload_sha256": "ab1ce67c83188b3f3120fd2b45a6edfd9e2531b3526ef29acd6fc60f53b2ade5"
 }
