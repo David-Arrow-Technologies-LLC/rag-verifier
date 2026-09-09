@@ -37,7 +37,9 @@ EXPECTED_TRIGGERS = (
     ("safetensors-changed", "runtime.safetensors"),
     ("huggingface-hub-changed", "runtime.huggingface-hub"),
     ("embedding-manifest-changed", "components.embedding-minilm.manifest_sha256"),
+    ("embedding-record-changed", "components.embedding-minilm.qualification_record"),
     ("nli-manifest-changed", "components.nli-deberta-v2.manifest_sha256"),
+    ("nli-record-changed", "components.nli-deberta-v2.qualification_record"),
     ("qualification-status-changed", "qualification.status"),
 )
 
@@ -86,8 +88,15 @@ def _validate_release_evidence(document, label):
         raise ValueError(f"{label} CI supply-chain evidence is invalid")
     if not isinstance(supply["manifest_path"], str) or not supply["manifest_path"] or not _is_digest(supply["manifest_sha256"]):
         raise ValueError(f"{label} CI supply-chain identity is invalid")
+    unknown_runner_values = {"unavailable", "unknown", "none", "null", "n/a", "na", "unset", "missing"}
     for field in ("runner_image_os", "runner_image_version"):
-        if not isinstance(supply[field], str) or not supply[field] or supply[field] == "unavailable":
+        value = supply[field]
+        if (
+            not isinstance(value, str)
+            or value != value.strip()
+            or value.lower() in unknown_runner_values
+            or re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]{0,127}", value) is None
+        ):
             raise ValueError(f"{label} runner identity is unavailable")
 
     dependency = payload["dependency_lock"]
@@ -128,10 +137,28 @@ def _validate_release_evidence(document, label):
         if not _is_digest(component["manifest_sha256"]):
             raise ValueError(f"{label} component manifest identity is invalid: {name}")
         record = component["qualification_record"]
-        if not isinstance(record, dict) or not isinstance(record.get("qualification"), dict):
+        expected_record_fields = (
+            {"model", "benchmark", "metrics", "qualification"}
+            if name == "embedding-minilm"
+            else {"model", "benchmark", "policy", "case_results", "metrics", "qualification"}
+        )
+        if not isinstance(record, dict) or set(record) != expected_record_fields:
+            raise ValueError(f"{label} component qualification is invalid: {name}")
+        if any(not isinstance(record[field], dict) or not record[field] for field in ("model", "benchmark", "metrics")):
+            raise ValueError(f"{label} component qualification is invalid: {name}")
+        if name == "nli-deberta-v2" and (
+            not isinstance(record["policy"], dict)
+            or not record["policy"]
+            or not isinstance(record["case_results"], list)
+            or not record["case_results"]
+        ):
+            raise ValueError(f"{label} component qualification is invalid: {name}")
+        if not isinstance(record["qualification"], dict) or set(record["qualification"]) != {"status", "reason"}:
             raise ValueError(f"{label} component qualification is invalid: {name}")
         status = record["qualification"].get("status")
-        if status not in {"PASS", "FAIL"}:
+        reason = record["qualification"].get("reason")
+        allowed_statuses = {"PASS", "REVIEW", "FAIL"} if name == "embedding-minilm" else {"PASS", "FAIL"}
+        if status not in allowed_statuses or not isinstance(reason, str) or not reason:
             raise ValueError(f"{label} component status is invalid: {name}")
         component_statuses[name] = status
 
@@ -203,7 +230,15 @@ def evaluate_runtime_drift(policy_path, qualified_evidence_path, observed_eviden
         before = _resolve(qualified_payload, path)
         after = _resolve(observed_payload, path)
         if before != after:
-            triggered.append({"id": trigger["id"], "path": path, "qualified": before, "observed": after})
+            if isinstance(before, (dict, list)) or isinstance(after, (dict, list)):
+                triggered.append({
+                    "id": trigger["id"],
+                    "path": path,
+                    "qualified_sha256": payload_sha256(before),
+                    "observed_sha256": payload_sha256(after),
+                })
+            else:
+                triggered.append({"id": trigger["id"], "path": path, "qualified": before, "observed": after})
     decision = DECISION_REQUALIFY if triggered else DECISION_CURRENT
     payload = {
         "artifact_schema_version": 1,
