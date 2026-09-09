@@ -99,20 +99,20 @@ def test_identical_runtime_remains_current(tmp_path):
 
 
 @pytest.mark.parametrize(
-    ("path", "expected"),
+    ("path", "changed_value", "expected"),
     [
-        (("source_revision",), "source-revision-changed"),
-        (("ci_supply_chain", "runner_image_version"), "runner-image-changed"),
-        (("components", "nli-deberta-v2", "manifest_sha256"), "nli-manifest-changed"),
+        (("source_revision",), "9" * 40, "source-revision-changed"),
+        (("ci_supply_chain", "runner_image_version"), "20260909.1", "runner-image-changed"),
+        (("components", "nli-deberta-v2", "manifest_sha256"), "9" * 64, "nli-manifest-changed"),
     ],
 )
-def test_governed_drift_requires_requalification(tmp_path, path, expected):
+def test_governed_drift_requires_requalification(tmp_path, path, changed_value, expected):
     baseline_document = _evidence()
     observed_document = copy.deepcopy(baseline_document)
     value = observed_document["payload"]
     for part in path[:-1]:
         value = value[part]
-    value[path[-1]] = "changed"
+    value[path[-1]] = changed_value
     observed_document["payload_sha256"] = payload_sha256(observed_document["payload"])
     baseline = tmp_path / "baseline.json"
     observed = tmp_path / "observed.json"
@@ -179,7 +179,7 @@ def test_missing_monitored_field_fails_closed(tmp_path):
     observed = tmp_path / "observed.json"
     _write(baseline, baseline_document)
     _write(observed, observed_document)
-    with pytest.raises(ValueError, match="missing monitored field"):
+    with pytest.raises(ValueError, match="runtime evidence is invalid"):
         _evaluate(baseline, observed)
 
 
