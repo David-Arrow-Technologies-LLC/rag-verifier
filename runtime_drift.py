@@ -237,7 +237,7 @@ def evaluate_runtime_drift(policy_path, qualified_evidence_path, observed_eviden
         path = trigger["path"]
         before = _resolve(qualified_payload, path)
         after = _resolve(observed_payload, path)
-        if before != after:
+        if canonical_payload(before) != canonical_payload(after):
             if isinstance(before, (dict, list)) or isinstance(after, (dict, list)):
                 triggered.append({
                     "id": trigger["id"],
