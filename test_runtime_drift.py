@@ -46,11 +46,23 @@ def _evidence():
         "components": {
             "embedding-minilm": {
                 "manifest_sha256": "f" * 64,
-                "qualification_record": {"qualification": {"status": "PASS"}},
+                "qualification_record": {
+                    "model": {"model_id": "embedding/model"},
+                    "benchmark": {"benchmark_id": "embedding-benchmark"},
+                    "metrics": {"recall_at_k": 1.0},
+                    "qualification": {"status": "PASS", "reason": "QUALIFICATION_THRESHOLDS_SATISFIED"},
+                },
             },
             "nli-deberta-v2": {
                 "manifest_sha256": "0" * 64,
-                "qualification_record": {"qualification": {"status": "PASS"}},
+                "qualification_record": {
+                    "model": {"model_id": "nli/model"},
+                    "benchmark": {"benchmark_id": "nli-benchmark"},
+                    "policy": {"pass_threshold": 0.8},
+                    "case_results": [{"case_id": "NLI-001"}],
+                    "metrics": {"label_accuracy": 1.0},
+                    "qualification": {"status": "PASS", "reason": "QUALIFICATION_THRESHOLDS_SATISFIED"},
+                },
             },
         },
         "qualification": {
@@ -205,6 +217,51 @@ def test_unavailable_runner_identity_fails_closed(tmp_path):
     _write(observed, evidence)
     with pytest.raises(ValueError, match="runner identity is unavailable"):
         evaluate_runtime_drift(POLICY, baseline, observed, evidence["payload_sha256"])
+
+
+@pytest.mark.parametrize("unknown", ["unknown", "Unavailable", "  ", "n/a"])
+def test_unknown_runner_sentinels_fail_closed(tmp_path, unknown):
+    evidence = _evidence()
+    evidence["payload"]["ci_supply_chain"]["runner_image_os"] = unknown
+    evidence["payload_sha256"] = payload_sha256(evidence["payload"])
+    baseline = tmp_path / "baseline.json"
+    observed = tmp_path / "observed.json"
+    _write(baseline, evidence)
+    _write(observed, evidence)
+    with pytest.raises(ValueError, match="runner identity is unavailable"):
+        evaluate_runtime_drift(POLICY, baseline, observed, evidence["payload_sha256"])
+
+
+@pytest.mark.parametrize("component", ["embedding-minilm", "nli-deberta-v2"])
+def test_truncated_component_record_fails_closed(tmp_path, component):
+    baseline_document = _evidence()
+    observed_document = copy.deepcopy(baseline_document)
+    observed_document["payload"]["components"][component]["qualification_record"] = {
+        "qualification": {"status": "PASS"}
+    }
+    observed_document["payload_sha256"] = payload_sha256(observed_document["payload"])
+    baseline = tmp_path / "baseline.json"
+    observed = tmp_path / "observed.json"
+    _write(baseline, baseline_document)
+    _write(observed, observed_document)
+    with pytest.raises(ValueError, match="component qualification is invalid"):
+        _evaluate(baseline, observed)
+
+
+def test_complete_component_record_change_requires_requalification(tmp_path):
+    baseline_document = _evidence()
+    observed_document = copy.deepcopy(baseline_document)
+    observed_document["payload"]["components"]["nli-deberta-v2"]["qualification_record"]["metrics"]["label_accuracy"] = 0.9
+    observed_document["payload_sha256"] = payload_sha256(observed_document["payload"])
+    baseline = tmp_path / "baseline.json"
+    observed = tmp_path / "observed.json"
+    _write(baseline, baseline_document)
+    _write(observed, observed_document)
+    result = _evaluate(baseline, observed)
+    assert result["payload"]["decision"] == DECISION_REQUALIFY
+    trigger = result["payload"]["triggers"]
+    assert [item["id"] for item in trigger] == ["nli-record-changed"]
+    assert set(trigger[0]) == {"id", "path", "qualified_sha256", "observed_sha256"}
 
 
 def test_fabricated_rehashed_baseline_requires_trusted_digest(tmp_path):
