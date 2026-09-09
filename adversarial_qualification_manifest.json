@@ -80,7 +80,8 @@
         "expected_decision": "BLOCK",
         "expected_rule_ids": [
           "instruction-override",
-          "secret-exfiltration"
+          "secret-exfiltration",
+          "authority-impersonation"
         ]
       },
       {
@@ -119,5 +120,5 @@
       }
     ]
   },
-  "payload_sha256": "b170e672457ef7aaa4f0ea20529a293371b08f13aa81ec47699d080f786b83e9"
+  "payload_sha256": "f979a8856bd350c2b427a7481840ef8996914c76e3375cc0fc58fce9ff7cae6a"
 }
