@@ -1,5 +1,7 @@
 import math
 
+from prompt_injection_qualification import enforce_document_security
+
 
 class ContextBuilder:
     def __init__(
@@ -75,6 +77,11 @@ class ContextBuilder:
                 raise ValueError(
                     "text must be a non-empty string"
                 )
+
+            enforce_document_security(
+                chunk_id,
+                text
+            )
 
             for score_name in (
                 "retrieval_score",
