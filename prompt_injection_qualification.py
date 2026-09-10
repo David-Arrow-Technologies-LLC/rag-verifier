@@ -56,7 +56,7 @@ RULES = (
     (
         "secret-exfiltration",
         re.compile(
-            r"\b(?:reveal|print|show|expose|return)\b.{0,80}"
+            r"\b(?:reveal|print|show|expose|return)\b[^.!?;]{0,80}"
             r"\b(?:system prompt|developer message|secret|credential|api[ -]?key|access token)\b",
             re.IGNORECASE | re.DOTALL,
         ),
@@ -64,7 +64,7 @@ RULES = (
     (
         "tool-command",
         re.compile(
-            r"\b(?:call|invoke|execute|run)\b.{0,40}"
+            r"\b(?:call|invoke|execute|run)\b[^.!?;]{0,40}"
             r"\b(?:tool|function|shell|command)\b",
             re.IGNORECASE | re.DOTALL,
         ),
