@@ -12,7 +12,9 @@ The policy is intentionally fail closed:
   incomplete-category, and unknown-rule manifests are rejected;
 - every attack case must produce the exact expected decision and ordered rule set;
 - benign clinical documents are included to detect overblocking regressions;
-- qualification evidence is canonical and SHA-256-bound;
+- qualification evidence is canonical and bound to the source revision, implementation SHA-256, and corpus SHA-256;
+- the approved corpus digest is pinned independently in the supply-chain policy;
+- CI retains the generated qualification evidence for 90 days;
 - a failed case produces an overall `FAIL` qualification.
 
 Run the deterministic qualification with:
@@ -20,7 +22,8 @@ Run the deterministic qualification with:
 ```bash
 python run_adversarial_qualification.py \
   --manifest adversarial_qualification_manifest.json \
-  --output qualification-evidence/rag-v30-adversarial.json
+  --output qualification-evidence/rag-v30-adversarial.json \
+  --source-revision <40-character-git-sha>
 ```
 
 This control is defense in depth, not a claim that pattern matching can recognize
