@@ -11,8 +11,12 @@ def main():
     )
     parser.add_argument("--manifest", required=True)
     parser.add_argument("--output", required=True)
+    parser.add_argument("--source-revision", required=True)
     args = parser.parse_args()
-    evidence = qualify_adversarial_manifest(args.manifest)
+    evidence = qualify_adversarial_manifest(
+        args.manifest,
+        args.source_revision,
+    )
     output = Path(args.output)
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(canonical_payload(evidence) + "\n", encoding="utf-8")
