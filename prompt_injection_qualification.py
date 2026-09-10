@@ -87,8 +87,7 @@ RULES = (
             r"^\s*(?:system|developer|administrator|security policy)\s+"
             r"(?:message|instruction|notice|override)\s*:"
             r"|\b(?:ignore|disregard|override|forget)\b[^.!?;]{0,40}"
-            r"\b(?:system|developer|administrator|security policy)\s+"
-            r"(?:message|instructions?|notice|override)\b"
+            r"\bdeveloper\s+(?:message|instructions?|notice|override)\b"
             r")",
             re.IGNORECASE | re.MULTILINE,
         ),
