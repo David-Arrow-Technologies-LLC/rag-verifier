@@ -3,7 +3,7 @@ import json
 import re
 from pathlib import Path
 
-from supply_chain_policy import reject_duplicate_json_keys
+from supply_chain_policy import file_sha256, reject_duplicate_json_keys
 
 
 POLICY_VERSION = "rag-v30-adversarial-injection-v1"
@@ -20,10 +20,15 @@ REQUIRED_CATEGORIES = {
     "citation-bypass",
     "authority-impersonation",
 }
+CATEGORY_RULE_IDS = {
+    category: category
+    for category in REQUIRED_CATEGORIES - {"benign-clinical-content"}
+}
 RULES = (
     (
         "instruction-override",
         re.compile(
+            r"(?<!do not )(?<!don't )(?<!never )"
             r"\b(?:ignore|disregard|override|forget)\b.{0,80}"
             r"\b(?:previous|prior|system|developer|safety|instructions?)\b",
             re.IGNORECASE | re.DOTALL,
@@ -33,7 +38,10 @@ RULES = (
         "role-boundary-injection",
         re.compile(
             r"(?:<\|(?:system|developer|assistant|user)\|>|\[/?INST\]|"
-            r"^\s*#{0,3}\s*(?:system|developer)\s*:)",
+            r"^\s*#{0,3}\s*(?:system|developer)\s*:\s*"
+            r"(?:ignore|disregard|override|forget|call|invoke|execute|run|"
+            r"reveal|print|show|expose|return|do not|don't|omit|remove|"
+            r"fabricate|invent)\b)",
             re.IGNORECASE | re.MULTILINE,
         ),
     ),
@@ -169,12 +177,22 @@ def load_adversarial_manifest(path):
         inspect_document(case["document"])
         if expected not in {DECISION_ALLOW, DECISION_BLOCK}:
             raise ValueError("adversarial expected decision is invalid")
+        required_rule_id = CATEGORY_RULE_IDS.get(category)
         if (
             not isinstance(expected_rule_ids, list)
             or len(expected_rule_ids) != len(set(expected_rule_ids))
             or any(rule_id not in known_rule_ids for rule_id in expected_rule_ids)
-            or (expected == DECISION_ALLOW and expected_rule_ids)
-            or (expected == DECISION_BLOCK and not expected_rule_ids)
+            or (
+                category == "benign-clinical-content"
+                and (expected != DECISION_ALLOW or expected_rule_ids)
+            )
+            or (
+                required_rule_id is not None
+                and (
+                    expected != DECISION_BLOCK
+                    or required_rule_id not in expected_rule_ids
+                )
+            )
         ):
             raise ValueError("adversarial expected rules are invalid")
         ids.append(case_id)
@@ -186,7 +204,12 @@ def load_adversarial_manifest(path):
     return document
 
 
-def qualify_adversarial_manifest(path):
+def qualify_adversarial_manifest(path, source_revision, implementation_path=__file__):
+    if (
+        not isinstance(source_revision, str)
+        or re.fullmatch(r"[0-9a-f]{40}", source_revision) is None
+    ):
+        raise ValueError("source revision is invalid")
     manifest = load_adversarial_manifest(path)
     results = []
     for case in manifest["payload"]["cases"]:
@@ -211,6 +234,8 @@ def qualify_adversarial_manifest(path):
     payload = {
         "artifact_schema_version": 1,
         "policy_version": POLICY_VERSION,
+        "source_revision": source_revision,
+        "implementation_sha256": file_sha256(implementation_path),
         "manifest_sha256": manifest["payload_sha256"],
         "metrics": {
             "total_cases": len(results),
