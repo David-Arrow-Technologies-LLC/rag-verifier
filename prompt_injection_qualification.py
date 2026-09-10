@@ -29,7 +29,7 @@ RULES = (
         "instruction-override",
         re.compile(
             r"(?:"
-            r"\b(?:ignore|disregard|override|forget)\b.{0,80}"
+            r"\b(?:ignore|disregard|override|forget)\b[^.!?;]{0,80}"
             r"\b(?:previous|prior|system|developer|safety|instructions?|"
             r"everything\s+above|all\s+(?:text|content|instructions?|directions?)\s+above)\b"
             r"|\b(?:follow|obey)\s+(?:these|the\s+following)\s+"
@@ -41,8 +41,15 @@ RULES = (
     (
         "role-boundary-injection",
         re.compile(
-            r"(?:<\|(?:system|developer|assistant|user)\|>|\[/?INST\]|"
-            r"^\s*#{1,6}\s*(?:system|developer|assistant|user)\s*:)",
+            r"(?:<\\|(?:system|developer|assistant|user)\\|>|\\[/?INST\\]|"
+            r"^\\s*#{1,6}[ \\t]*"
+            r"(?:(?:\\*\\*|__|`)(?:system|developer|assistant|user)\\s*:?"
+            r"(?:\\*\\*|__|`)|(?:system|developer|assistant|user))"
+            r"[ \\t]*(?::|[-—])?[ \\t]*"
+            r"(?=$|"
+            r"(?:treat|ignore|disregard|override|forget|follow|obey|replace|"
+            r"answer|state|report|reveal|show|print|execute|run|call|invoke|"
+            r"respond|use|act\\s+as|you\\s+are|do\\s+not|don\'t|never|must|shall)\\b))",
             re.IGNORECASE | re.MULTILINE,
         ),
     ),
@@ -66,9 +73,9 @@ RULES = (
         "citation-bypass",
         re.compile(
             r"(?:"
-            r"\b(?:do not|don't)\b.{0,40}"
-            r"\b(?:include|provide|use|add)\b.{0,20}\bcitations?\b"
-            r"|\b(?:omit|remove|fabricate|invent)\b.{0,40}\bcitations?\b"
+            r"\b(?:do not|don't)\b[^.!?;]{0,40}"
+            r"\b(?:include|provide|use|add)\b[^.!?;]{0,20}\bcitations?\b"
+            r"|\b(?:omit|remove|fabricate|invent)\b[^.!?;]{0,40}\bcitations?\b"
             r")",
             re.IGNORECASE | re.DOTALL,
         ),
