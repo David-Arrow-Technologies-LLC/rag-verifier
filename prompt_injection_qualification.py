@@ -83,9 +83,14 @@ RULES = (
     (
         "authority-impersonation",
         re.compile(
+            r"(?:"
+            r"^\s*(?:system|developer|administrator|security policy)\s+"
+            r"(?:message|instruction|notice|override)\s*:"
+            r"|\b(?:ignore|disregard|override|forget)\b[^.!?;]{0,40}"
             r"\b(?:system|developer|administrator|security policy)\s+"
-            r"(?:message|instruction|notice|override)\b",
-            re.IGNORECASE,
+            r"(?:message|instructions?|notice|override)\b"
+            r")",
+            re.IGNORECASE | re.MULTILINE,
         ),
     ),
 )
@@ -100,7 +105,11 @@ _PROTECTIVE_NEGATION = re.compile(
     r"){0,2}\s*$",
     re.IGNORECASE,
 )
-_PROTECTIVELY_NEGATED_RULES = {"instruction-override", "citation-bypass"}
+_PROTECTIVELY_NEGATED_RULES = {
+    "instruction-override",
+    "citation-bypass",
+    "authority-impersonation",
+}
 
 
 def _is_protectively_negated(document, match_start):
