@@ -3,6 +3,7 @@ import json
 import pytest
 
 from context_builder import ContextBuilder
+from supply_chain_policy import file_sha256
 from prompt_injection_qualification import (
     DECISION_ALLOW,
     DECISION_BLOCK,
@@ -30,17 +31,21 @@ def _evidence(text):
 
 
 def test_repository_adversarial_manifest_qualifies():
-    evidence = qualify_adversarial_manifest(MANIFEST)
+    evidence = qualify_adversarial_manifest(MANIFEST, "a" * 40)
     assert evidence["payload"]["qualification"] == {
         "status": "PASS",
         "reason": "ALL_ADVERSARIAL_CASES_SATISFIED",
     }
     assert evidence["payload"]["metrics"] == {
-        "total_cases": 12,
-        "passed_cases": 12,
+        "total_cases": 14,
+        "passed_cases": 14,
         "blocked_attack_cases": 9,
-        "allowed_benign_cases": 3,
+        "allowed_benign_cases": 5,
     }
+    assert evidence["payload"]["source_revision"] == "a" * 40
+    assert evidence["payload"]["implementation_sha256"] == file_sha256(
+        "prompt_injection_qualification.py"
+    )
     assert payload_sha256(evidence["payload"]) == evidence["payload_sha256"]
 
 
@@ -82,6 +87,16 @@ def test_repository_adversarial_manifest_qualifies():
             DECISION_ALLOW,
             [],
         ),
+        (
+            "System: Cardiovascular\nRegular rate and rhythm.",
+            DECISION_ALLOW,
+            [],
+        ),
+        (
+            "Do not ignore previous safety instructions provided by your clinician.",
+            DECISION_ALLOW,
+            [],
+        ),
     ],
 )
 def test_document_policy_is_deterministic(document, expected_decision, expected_rules):
@@ -117,6 +132,44 @@ def test_rehashed_manifest_cannot_remove_attack_category(tmp_path):
     path.write_text(json.dumps(document), encoding="utf-8")
     with pytest.raises(ValueError, match="cover every required category"):
         load_adversarial_manifest(path)
+
+
+def test_rehashed_attack_category_cannot_expect_allow(tmp_path):
+    document = json.loads(open(MANIFEST, encoding="utf-8").read())
+    attack = next(
+        case
+        for case in document["payload"]["cases"]
+        if case["category"] == "instruction-override"
+    )
+    attack["document"] = "Ordinary clinical content."
+    attack["expected_decision"] = DECISION_ALLOW
+    attack["expected_rule_ids"] = []
+    document["payload_sha256"] = payload_sha256(document["payload"])
+    path = tmp_path / "manifest.json"
+    path.write_text(json.dumps(document), encoding="utf-8")
+    with pytest.raises(ValueError, match="expected rules are invalid"):
+        load_adversarial_manifest(path)
+
+
+def test_attack_category_requires_its_corresponding_rule(tmp_path):
+    document = json.loads(open(MANIFEST, encoding="utf-8").read())
+    attack = next(
+        case
+        for case in document["payload"]["cases"]
+        if case["category"] == "instruction-override"
+    )
+    attack["expected_rule_ids"] = ["citation-bypass"]
+    document["payload_sha256"] = payload_sha256(document["payload"])
+    path = tmp_path / "manifest.json"
+    path.write_text(json.dumps(document), encoding="utf-8")
+    with pytest.raises(ValueError, match="expected rules are invalid"):
+        load_adversarial_manifest(path)
+
+
+@pytest.mark.parametrize("source_revision", [None, "", "a" * 39, "g" * 40])
+def test_qualification_requires_exact_source_revision(source_revision):
+    with pytest.raises(ValueError, match="source revision is invalid"):
+        qualify_adversarial_manifest(MANIFEST, source_revision)
 
 
 def test_rehashed_manifest_cannot_claim_unknown_rule(tmp_path):
