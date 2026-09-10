@@ -29,8 +29,13 @@ RULES = (
         "instruction-override",
         re.compile(
             r"(?<!do not )(?<!don't )(?<!never )"
+            r"(?:"
             r"\b(?:ignore|disregard|override|forget)\b.{0,80}"
-            r"\b(?:previous|prior|system|developer|safety|instructions?)\b",
+            r"\b(?:previous|prior|system|developer|safety|instructions?|"
+            r"everything\s+above|all\s+(?:text|content|instructions?|directions?)\s+above)\b"
+            r"|\b(?:follow|obey)\s+(?:these|the\s+following)\s+"
+            r"(?:directions|instructions)\s+instead\b"
+            r")",
             re.IGNORECASE | re.DOTALL,
         ),
     ),
@@ -38,10 +43,7 @@ RULES = (
         "role-boundary-injection",
         re.compile(
             r"(?:<\|(?:system|developer|assistant|user)\|>|\[/?INST\]|"
-            r"^\s*#{0,3}\s*(?:system|developer)\s*:\s*"
-            r"(?:ignore|disregard|override|forget|call|invoke|execute|run|"
-            r"reveal|print|show|expose|return|do not|don't|omit|remove|"
-            r"fabricate|invent)\b)",
+            r"^\s*#{2,3}\s*(?:system|developer)\s*:)",
             re.IGNORECASE | re.MULTILINE,
         ),
     ),
@@ -64,8 +66,12 @@ RULES = (
     (
         "citation-bypass",
         re.compile(
-            r"\b(?:do not|don't|omit|remove|fabricate|invent)\b.{0,40}"
-            r"\bcitations?\b",
+            r"(?:"
+            r"\b(?:do not|don't)\b.{0,40}"
+            r"\b(?:include|provide|use|add)\b.{0,20}\bcitations?\b"
+            r"|(?<!do not )(?<!don't )(?<!never )"
+            r"\b(?:omit|remove|fabricate|invent)\b.{0,40}\bcitations?\b"
+            r")",
             re.IGNORECASE | re.DOTALL,
         ),
     ),
