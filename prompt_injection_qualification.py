@@ -41,15 +41,15 @@ RULES = (
     (
         "role-boundary-injection",
         re.compile(
-            r"(?:<\\|(?:system|developer|assistant|user)\\|>|\\[/?INST\\]|"
-            r"^\\s*#{1,6}[ \\t]*"
-            r"(?:(?:\\*\\*|__|`)(?:system|developer|assistant|user)\\s*:?"
-            r"(?:\\*\\*|__|`)|(?:system|developer|assistant|user))"
-            r"[ \\t]*(?::|[-—])?[ \\t]*"
+            r"(?:<\|(?:system|developer|assistant|user)\|>|\[/?INST\]|"
+            r"^\s*#{1,6}[ \t]*"
+            r"(?:(?:\*\*|__|`)(?:system|developer|assistant|user)\s*:?"
+            r"(?:\*\*|__|`)|(?:system|developer|assistant|user))"
+            r"[ \t]*(?::|[-—])?[ \t]*"
             r"(?=$|"
             r"(?:treat|ignore|disregard|override|forget|follow|obey|replace|"
             r"answer|state|report|reveal|show|print|execute|run|call|invoke|"
-            r"respond|use|act\\s+as|you\\s+are|do\\s+not|don\'t|never|must|shall)\\b))",
+            r"respond|use|act\s+as|you\s+are|do\s+not|don't|never|must|shall)\b))",
             re.IGNORECASE | re.MULTILINE,
         ),
     ),
