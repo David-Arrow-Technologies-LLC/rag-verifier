@@ -85,7 +85,12 @@ RULES = (
 
 
 _PROTECTIVE_NEGATION = re.compile(
-    r"\b(?:do\s+not|don't|never)(?:\s+[A-Za-z'-]+){0,4}\s*$",
+    r"\b(?:do\s+not|don't|never)"
+    r"(?:"
+    r"\s+(?:ever|again|intentionally|deliberately|knowingly|accidentally)"
+    r"|\s+under\s+any\s+circumstances"
+    r"|\s+at\s+any\s+time"
+    r"){0,2}\s*$",
     re.IGNORECASE,
 )
 _PROTECTIVELY_NEGATED_RULES = {"instruction-override", "citation-bypass"}
