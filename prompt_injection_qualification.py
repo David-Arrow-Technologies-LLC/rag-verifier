@@ -28,7 +28,6 @@ RULES = (
     (
         "instruction-override",
         re.compile(
-            r"(?<!do not )(?<!don't )(?<!never )"
             r"(?:"
             r"\b(?:ignore|disregard|override|forget)\b.{0,80}"
             r"\b(?:previous|prior|system|developer|safety|instructions?|"
@@ -43,7 +42,7 @@ RULES = (
         "role-boundary-injection",
         re.compile(
             r"(?:<\|(?:system|developer|assistant|user)\|>|\[/?INST\]|"
-            r"^\s*#{2,3}\s*(?:system|developer)\s*:)",
+            r"^\s*#{1,6}\s*(?:system|developer|assistant|user)\s*:)",
             re.IGNORECASE | re.MULTILINE,
         ),
     ),
@@ -69,8 +68,7 @@ RULES = (
             r"(?:"
             r"\b(?:do not|don't)\b.{0,40}"
             r"\b(?:include|provide|use|add)\b.{0,20}\bcitations?\b"
-            r"|(?<!do not )(?<!don't )(?<!never )"
-            r"\b(?:omit|remove|fabricate|invent)\b.{0,40}\bcitations?\b"
+            r"|\b(?:omit|remove|fabricate|invent)\b.{0,40}\bcitations?\b"
             r")",
             re.IGNORECASE | re.DOTALL,
         ),
@@ -84,6 +82,29 @@ RULES = (
         ),
     ),
 )
+
+
+_PROTECTIVE_NEGATION = re.compile(
+    r"\b(?:do\s+not|don't|never)(?:\s+[A-Za-z'-]+){0,4}\s*$",
+    re.IGNORECASE,
+)
+_PROTECTIVELY_NEGATED_RULES = {"instruction-override", "citation-bypass"}
+
+
+def _is_protectively_negated(document, match_start):
+    prefix = re.sub(r"\s+", " ", document[:match_start])
+    return _PROTECTIVE_NEGATION.search(prefix) is not None
+
+
+def _rule_matches(rule_id, pattern, document):
+    for match in pattern.finditer(document):
+        if (
+            rule_id in _PROTECTIVELY_NEGATED_RULES
+            and _is_protectively_negated(document, match.start())
+        ):
+            continue
+        return True
+    return False
 
 
 class PromptInjectionDetectedError(ValueError):
@@ -119,7 +140,7 @@ def inspect_document(document):
     rule_ids = [
         rule_id
         for rule_id, pattern in RULES
-        if pattern.search(document) is not None
+        if _rule_matches(rule_id, pattern, document)
     ]
     return {
         "decision": DECISION_BLOCK if rule_ids else DECISION_ALLOW,
