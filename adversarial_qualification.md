@@ -13,9 +13,16 @@ The policy is intentionally fail closed:
 - every attack case must produce the exact expected decision and ordered rule set;
 - benign clinical documents are included to detect overblocking regressions;
 - qualification evidence is canonical and bound to the source revision, implementation SHA-256, and corpus SHA-256;
-- the approved corpus digest is pinned independently in the supply-chain policy;
+- the approved corpus digest is additionally pinned by the repository-owned supply-chain policy, preventing corpus-only rehashing from silently qualifying;
 - CI retains the generated qualification evidence for 90 days;
 - a failed case produces an overall `FAIL` qualification.
+
+The repository policy pin is separate from the manifest's self-digest, but it is
+not an independent change-authority trust root: both the corpus and repository
+policy remain governed by the repository change process. A cryptographically or
+administratively independent corpus approval root must therefore be supplied by
+an external governance boundary if that stronger property is required. RAG-V30
+does not claim that property.
 
 Run the deterministic qualification with:
 
