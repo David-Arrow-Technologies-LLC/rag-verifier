@@ -14,7 +14,7 @@ EXACT_HEAD_REF = "ref: ${{ github.event.pull_request.head.sha || github.sha }}"
 VALIDATE_COMMAND = "run: python supply_chain_policy.py"
 WORKFLOW_MANIFEST = "ci_supply_chain_manifest.json"
 ADVERSARIAL_MANIFEST = "adversarial_qualification_manifest.json"
-APPROVED_ADVERSARIAL_PAYLOAD_SHA256 = "408e216ecfd65e00d698b4f4ae219a19c4e377ecffcf49cdf26d4201218b741e"
+APPROVED_ADVERSARIAL_PAYLOAD_SHA256 = "8cf8e452489f7cdb5a3424cf13cdd15dc395866eee8f0ad9a80398bbe557dd57"
 APPROVED_ACTIONS = {
     "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
     "actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065",
