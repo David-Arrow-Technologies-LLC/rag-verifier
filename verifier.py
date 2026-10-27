@@ -85,8 +85,11 @@ class RAGVerifier:
         if not normalized:
             return []
 
+        # A period between decimal digits belongs to the same hypothesis.
+        # Keep other punctuation and trailing citation attachment unchanged.
         pattern = re.compile(
-            r".+?(?:[.!?](?:\s*\[[A-Za-z0-9_-]+\])*\s*|$)"
+            r".+?(?:(?:[!?]|(?<!\d)\.|\.(?!\d))"
+            r"(?:\s*\[[A-Za-z0-9_-]+\])*\s*|$)"
         )
 
         matches = [

@@ -1,4 +1,6 @@
-﻿from verifier import RAGVerifier
+﻿import pytest
+
+from verifier import RAGVerifier
 from nli_provider import FakeNLIProvider
 
 
@@ -336,3 +338,75 @@ def test_provider_valid_probability_sum_is_accepted():
 
     assert result["status"] == "PASS"
     assert result["trusted_release"] is True
+
+
+# Decimal boundaries must not fragment the hypothesis or detach its citations.
+
+
+@pytest.mark.parametrize("value", ["9.0", "-0.25", "+12.345", "0.001", "９.０"])
+def test_decimal_claim_keeps_terminal_citations(value):
+    verifier, _ = make_verifier()
+    sentence = f"Synthetic value is {value}. [mi-001] [mi-002]"
+    assert verifier.split_claims(sentence) == [sentence]
+    assert verifier.decompose_atomic_claims(sentence) == [{
+        "claim": f"Synthetic value is {value}.",
+        "citations": ["mi-001", "mi-002"],
+    }]
+
+
+@pytest.mark.parametrize("terminal", [".", "!", "?"])
+def test_decimal_does_not_merge_adjacent_sentences(terminal):
+    verifier, _ = make_verifier()
+    first = f"Synthetic value is 9.0{terminal} [mi-001]"
+    second = "Another value is 2.5. [mi-002]"
+    assert verifier.split_claims(first + "\n" + second) == [first, second]
+    # Existing no-whitespace sentence-boundary behavior remains available.
+    assert verifier.split_claims(first + second) == [first, second]
+
+
+@pytest.mark.parametrize("suffix", ["", " [mi-001]"])
+def test_unterminated_decimal_claim_is_retained(suffix):
+    verifier, _ = make_verifier()
+    text = "Synthetic value is 9.0" + suffix
+    assert verifier.split_claims(text) == [text]
+
+
+@pytest.mark.parametrize("scores,status", [
+    ({"entailment": .98, "contradiction": .01, "neutral": .01}, "PASS"),
+    ({"entailment": .01, "contradiction": .98, "neutral": .01}, "FAIL"),
+    ({"entailment": .01, "contradiction": .01, "neutral": .98}, "REVIEW"),
+])
+def test_decimal_full_answer_uses_intact_hypothesis(scores, status):
+    # Default contradiction makes accidental hypothesis fragmentation observable.
+    verifier, provider = make_verifier({
+        "entailment": .01, "contradiction": .98, "neutral": .01,
+    })
+    hypothesis = "Synthetic value is 9.0."
+    provider.set_response(verifier.chunks["mi-001"], hypothesis, scores)
+    answer = hypothesis + " [mi-001]"
+    result = verifier.verify_answer(answer)
+    assert result == verifier.verify_answer(answer)
+    assert result["status"] == status
+    assert result["trusted_release"] is (status == "PASS")
+    assert result["citation_coverage"] == {
+        "cited_claims": 1, "total_claims": 1,
+        "coverage_ratio": 1.0, "coverage_percent": 100.0,
+    }
+    assert result["claims"][0]["claim"] == hypothesis
+    assert result["claims"][0]["citations"] == ["mi-001"]
+
+
+@pytest.mark.parametrize("citation,reason", [
+    ("", "UNCITED_FACTUAL_CLAIM"),
+    (" [fake-999]", "CITATION_NOT_FOUND"),
+    (" [pna-001]", "CITATION_NOT_RETRIEVED"),
+])
+def test_decimal_claim_still_fails_closed(citation, reason):
+    verifier, _ = make_verifier()
+    result = verifier.verify_answer("Synthetic value is 9.0." + citation)
+    assert result["status"] == "FAIL"
+    assert result["trusted_release"] is False
+    assert len(result["claims"]) == 1
+    claim = result["claims"][0]
+    assert claim["claim"] == "Synthetic value is 9.0."
+    assert (claim["verification"][0]["reason"] if citation else claim["reason"]) == reason
