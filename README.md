@@ -6,6 +6,10 @@ RAG Verifier is a Python research and engineering project for checking whether g
 
 > **Safety boundary:** Engineering and research use only. The repository's tests and qualification artifacts do **not** establish clinical validity, medical-device clearance, production readiness, or authorization for autonomous patient care.
 
+## Start here: technical portfolio walkthrough
+
+**[Explore the RAG Verifier portfolio walkthrough](docs/portfolio-walkthrough.md)** — a concise guide to the architecture, five deterministic synthetic verification cases, release-policy decisions, GitHub CI evidence, and user-reported local execution provenance. The demonstration uses `FakeNLIProvider` and is **not** an end-to-end live-model benchmark or clinical validation.
+
 ## Why verification matters
 
 A fluent AI answer may contain unsupported statements, misleading citations, or evidence that was not actually retrieved. RAG Verifier investigates claim-level evidence checks and explicit release decisions rather than assuming that retrieval alone guarantees a correct answer.
