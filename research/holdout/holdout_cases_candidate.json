@@ -1,0 +1,844 @@
+{
+  "payload": {
+    "schema_version": 2,
+    "benchmark_id": "nli-independent-synthetic-holdout",
+    "benchmark_version": "synthetic-medical-nli-holdout-v1-candidate",
+    "model": {
+      "model_id": "MoritzLaurer/DeBERTa-v3-base-mnli-fever-anli",
+      "model_revision": "6f5cf0a2b59cabb106aca4c287eed12e357e90eb",
+      "provider_type": "huggingface-sequence-classification",
+      "labels": [
+        "entailment",
+        "neutral",
+        "contradiction"
+      ]
+    },
+    "policy": {
+      "pass_threshold": 0.9,
+      "fail_threshold": 0.9
+    },
+    "cases": [
+      {
+        "case_id": "H01-1-E",
+        "category": "comorbidity",
+        "critical": false,
+        "premise": "The fictional record documents eczema and migraine.",
+        "hypothesis": "Eczema is documented.",
+        "expected_label": "entailment",
+        "expected_status": "PASS"
+      },
+      {
+        "case_id": "H01-1-C",
+        "category": "comorbidity",
+        "critical": true,
+        "premise": "The fictional record documents eczema and migraine.",
+        "hypothesis": "The record excludes eczema.",
+        "expected_label": "contradiction",
+        "expected_status": "FAIL"
+      },
+      {
+        "case_id": "H01-1-N",
+        "category": "comorbidity",
+        "critical": false,
+        "premise": "The fictional record documents eczema and migraine.",
+        "hypothesis": "The person has glaucoma.",
+        "expected_label": "neutral",
+        "expected_status": "REVIEW"
+      },
+      {
+        "case_id": "H01-2-E",
+        "category": "comorbidity",
+        "critical": false,
+        "premise": "The simulated chart lists gout together with psoriasis.",
+        "hypothesis": "Gout is among the listed conditions.",
+        "expected_label": "entailment",
+        "expected_status": "PASS"
+      },
+      {
+        "case_id": "H01-2-C",
+        "category": "comorbidity",
+        "critical": false,
+        "premise": "The simulated chart lists gout together with psoriasis.",
+        "hypothesis": "The chart states gout is absent.",
+        "expected_label": "contradiction",
+        "expected_status": "FAIL"
+      },
+      {
+        "case_id": "H01-2-N",
+        "category": "comorbidity",
+        "critical": false,
+        "premise": "The simulated chart lists gout together with psoriasis.",
+        "hypothesis": "The person also has epilepsy.",
+        "expected_label": "neutral",
+        "expected_status": "REVIEW"
+      },
+      {
+        "case_id": "H01-3-E",
+        "category": "comorbidity",
+        "critical": false,
+        "premise": "The fictional history includes anemia and hypothyroidism.",
+        "hypothesis": "Hypothyroidism is in the history.",
+        "expected_label": "entailment",
+        "expected_status": "PASS"
+      },
+      {
+        "case_id": "H01-3-C",
+        "category": "comorbidity",
+        "critical": false,
+        "premise": "The fictional history includes anemia and hypothyroidism.",
+        "hypothesis": "The history rules out hypothyroidism.",
+        "expected_label": "contradiction",
+        "expected_status": "FAIL"
+      },
+      {
+        "case_id": "H01-3-N",
+        "category": "comorbidity",
+        "critical": false,
+        "premise": "The fictional history includes anemia and hypothyroidism.",
+        "hypothesis": "The person has cataracts.",
+        "expected_label": "neutral",
+        "expected_status": "REVIEW"
+      },
+      {
+        "case_id": "H02-1-E",
+        "category": "medication-dose",
+        "critical": false,
+        "premise": "A fictional prescription specifies carvedilol 6.25 mg twice daily.",
+        "hypothesis": "Carvedilol is prescribed twice per day.",
+        "expected_label": "entailment",
+        "expected_status": "PASS"
+      },
+      {
+        "case_id": "H02-1-C",
+        "category": "medication-dose",
+        "critical": true,
+        "premise": "A fictional prescription specifies carvedilol 6.25 mg twice daily.",
+        "hypothesis": "Carvedilol is prescribed once per day.",
+        "expected_label": "contradiction",
+        "expected_status": "FAIL"
+      },
+      {
+        "case_id": "H02-1-N",
+        "category": "medication-dose",
+        "critical": false,
+        "premise": "A fictional prescription specifies carvedilol 6.25 mg twice daily.",
+        "hypothesis": "The person receives a vitamin injection.",
+        "expected_label": "neutral",
+        "expected_status": "REVIEW"
+      },
+      {
+        "case_id": "H02-2-E",
+        "category": "medication-dose",
+        "critical": false,
+        "premise": "The synthetic order specifies gabapentin 300 mg nightly.",
+        "hypothesis": "The nightly gabapentin dose is 300 mg.",
+        "expected_label": "entailment",
+        "expected_status": "PASS"
+      },
+      {
+        "case_id": "H02-2-C",
+        "category": "medication-dose",
+        "critical": false,
+        "premise": "The synthetic order specifies gabapentin 300 mg nightly.",
+        "hypothesis": "The nightly gabapentin dose is 600 mg.",
+        "expected_label": "contradiction",
+        "expected_status": "FAIL"
+      },
+      {
+        "case_id": "H02-2-N",
+        "category": "medication-dose",
+        "critical": false,
+        "premise": "The synthetic order specifies gabapentin 300 mg nightly.",
+        "hypothesis": "The person uses a topical antifungal.",
+        "expected_label": "neutral",
+        "expected_status": "REVIEW"
+      },
+      {
+        "case_id": "H02-3-E",
+        "category": "medication-dose",
+        "critical": false,
+        "premise": "A simulated medication list shows levothyroxine 75 micrograms every morning.",
+        "hypothesis": "Levothyroxine is listed for morning use.",
+        "expected_label": "entailment",
+        "expected_status": "PASS"
+      },
+      {
+        "case_id": "H02-3-C",
+        "category": "medication-dose",
+        "critical": false,
+        "premise": "A simulated medication list shows levothyroxine 75 micrograms every morning.",
+        "hypothesis": "Levothyroxine is listed for evening use only.",
+        "expected_label": "contradiction",
+        "expected_status": "FAIL"
+      },
+      {
+        "case_id": "H02-3-N",
+        "category": "medication-dose",
+        "critical": false,
+        "premise": "A simulated medication list shows levothyroxine 75 micrograms every morning.",
+        "hypothesis": "The person takes an antacid.",
+        "expected_label": "neutral",
+        "expected_status": "REVIEW"
+      },
+      {
+        "case_id": "H03-1-E",
+        "category": "laboratory-numeric",
+        "critical": false,
+        "premise": "The synthetic laboratory report gives sodium as 139 mmol/L.",
+        "hypothesis": "The reported sodium is 139 mmol/L.",
+        "expected_label": "entailment",
+        "expected_status": "PASS"
+      },
+      {
+        "case_id": "H03-1-C",
+        "category": "laboratory-numeric",
+        "critical": true,
+        "premise": "The synthetic laboratory report gives sodium as 139 mmol/L.",
+        "hypothesis": "The reported sodium is 149 mmol/L.",
+        "expected_label": "contradiction",
+        "expected_status": "FAIL"
+      },
+      {
+        "case_id": "H03-1-N",
+        "category": "laboratory-numeric",
+        "critical": false,
+        "premise": "The synthetic laboratory report gives sodium as 139 mmol/L.",
+        "hypothesis": "The report also measured phosphate.",
+        "expected_label": "neutral",
+        "expected_status": "REVIEW"
+      },
+      {
+        "case_id": "H03-2-E",
+        "category": "laboratory-numeric",
+        "critical": false,
+        "premise": "The fictional report records hemoglobin at 12.4 g/dL.",
+        "hypothesis": "Hemoglobin is reported as 12.4 g/dL.",
+        "expected_label": "entailment",
+        "expected_status": "PASS"
+      },
+      {
+        "case_id": "H03-2-C",
+        "category": "laboratory-numeric",
+        "critical": false,
+        "premise": "The fictional report records hemoglobin at 12.4 g/dL.",
+        "hypothesis": "Hemoglobin is reported as 10.4 g/dL.",
+        "expected_label": "contradiction",
+        "expected_status": "FAIL"
+      },
+      {
+        "case_id": "H03-2-N",
+        "category": "laboratory-numeric",
+        "critical": false,
+        "premise": "The fictional report records hemoglobin at 12.4 g/dL.",
+        "hypothesis": "The report includes a reticulocyte count.",
+        "expected_label": "neutral",
+        "expected_status": "REVIEW"
+      },
+      {
+        "case_id": "H03-3-E",
+        "category": "laboratory-numeric",
+        "critical": false,
+        "premise": "The simulated laboratory sheet lists platelet count as 245 × 10^9/L.",
+        "hypothesis": "The platelet count listed is 245 × 10^9/L.",
+        "expected_label": "entailment",
+        "expected_status": "PASS"
+      },
+      {
+        "case_id": "H03-3-C",
+        "category": "laboratory-numeric",
+        "critical": false,
+        "premise": "The simulated laboratory sheet lists platelet count as 245 × 10^9/L.",
+        "hypothesis": "The platelet count listed is 425 × 10^9/L.",
+        "expected_label": "contradiction",
+        "expected_status": "FAIL"
+      },
+      {
+        "case_id": "H03-3-N",
+        "category": "laboratory-numeric",
+        "critical": false,
+        "premise": "The simulated laboratory sheet lists platelet count as 245 × 10^9/L.",
+        "hypothesis": "The sheet contains a fibrinogen result.",
+        "expected_label": "neutral",
+        "expected_status": "REVIEW"
+      },
+      {
+        "case_id": "H04-1-E",
+        "category": "negation",
+        "critical": false,
+        "premise": "The fictional examination explicitly finds no ankle swelling.",
+        "hypothesis": "Ankle swelling is absent on this examination.",
+        "expected_label": "entailment",
+        "expected_status": "PASS"
+      },
+      {
+        "case_id": "H04-1-C",
+        "category": "negation",
+        "critical": true,
+        "premise": "The fictional examination explicitly finds no ankle swelling.",
+        "hypothesis": "Ankle swelling is present on this examination.",
+        "expected_label": "contradiction",
+        "expected_status": "FAIL"
+      },
+      {
+        "case_id": "H04-1-N",
+        "category": "negation",
+        "critical": false,
+        "premise": "The fictional examination explicitly finds no ankle swelling.",
+        "hypothesis": "The person has a headache.",
+        "expected_label": "neutral",
+        "expected_status": "REVIEW"
+      },
+      {
+        "case_id": "H04-2-E",
+        "category": "negation",
+        "critical": false,
+        "premise": "The simulated history states the person has not experienced fainting.",
+        "hypothesis": "The history denies fainting episodes.",
+        "expected_label": "entailment",
+        "expected_status": "PASS"
+      },
+      {
+        "case_id": "H04-2-C",
+        "category": "negation",
+        "critical": false,
+        "premise": "The simulated history states the person has not experienced fainting.",
+        "hypothesis": "The history confirms fainting episodes.",
+        "expected_label": "contradiction",
+        "expected_status": "FAIL"
+      },
+      {
+        "case_id": "H04-2-N",
+        "category": "negation",
+        "critical": false,
+        "premise": "The simulated history states the person has not experienced fainting.",
+        "hypothesis": "The person reports tinnitus.",
+        "expected_label": "neutral",
+        "expected_status": "REVIEW"
+      },
+      {
+        "case_id": "H04-3-E",
+        "category": "negation",
+        "critical": false,
+        "premise": "The fictional note explicitly says no skin ulcer was observed.",
+        "hypothesis": "No skin ulcer was seen.",
+        "expected_label": "entailment",
+        "expected_status": "PASS"
+      },
+      {
+        "case_id": "H04-3-C",
+        "category": "negation",
+        "critical": false,
+        "premise": "The fictional note explicitly says no skin ulcer was observed.",
+        "hypothesis": "A skin ulcer was observed.",
+        "expected_label": "contradiction",
+        "expected_status": "FAIL"
+      },
+      {
+        "case_id": "H04-3-N",
+        "category": "negation",
+        "critical": false,
+        "premise": "The fictional note explicitly says no skin ulcer was observed.",
+        "hypothesis": "The person has reduced appetite.",
+        "expected_label": "neutral",
+        "expected_status": "REVIEW"
+      },
+      {
+        "case_id": "H05-1-E",
+        "category": "temporal",
+        "critical": false,
+        "premise": "In the simulated timeline, dizziness began on Tuesday and nausea began on Thursday.",
+        "hypothesis": "Dizziness started before nausea.",
+        "expected_label": "entailment",
+        "expected_status": "PASS"
+      },
+      {
+        "case_id": "H05-1-C",
+        "category": "temporal",
+        "critical": true,
+        "premise": "In the simulated timeline, dizziness began on Tuesday and nausea began on Thursday.",
+        "hypothesis": "Nausea started before dizziness.",
+        "expected_label": "contradiction",
+        "expected_status": "FAIL"
+      },
+      {
+        "case_id": "H05-1-N",
+        "category": "temporal",
+        "critical": false,
+        "premise": "In the simulated timeline, dizziness began on Tuesday and nausea began on Thursday.",
+        "hypothesis": "The symptoms ended on Saturday.",
+        "expected_label": "neutral",
+        "expected_status": "REVIEW"
+      },
+      {
+        "case_id": "H05-2-E",
+        "category": "temporal",
+        "critical": false,
+        "premise": "The fictional encounter notes imaging on March 3 and a procedure on March 6.",
+        "hypothesis": "Imaging preceded the procedure.",
+        "expected_label": "entailment",
+        "expected_status": "PASS"
+      },
+      {
+        "case_id": "H05-2-C",
+        "category": "temporal",
+        "critical": false,
+        "premise": "The fictional encounter notes imaging on March 3 and a procedure on March 6.",
+        "hypothesis": "The procedure preceded imaging.",
+        "expected_label": "contradiction",
+        "expected_status": "FAIL"
+      },
+      {
+        "case_id": "H05-2-N",
+        "category": "temporal",
+        "critical": false,
+        "premise": "The fictional encounter notes imaging on March 3 and a procedure on March 6.",
+        "hypothesis": "A follow-up was held on March 9.",
+        "expected_label": "neutral",
+        "expected_status": "REVIEW"
+      },
+      {
+        "case_id": "H05-3-E",
+        "category": "temporal",
+        "critical": false,
+        "premise": "The synthetic log records discharge at 10:00 and a telephone call at 14:00 on the same day.",
+        "hypothesis": "The call occurred after discharge.",
+        "expected_label": "entailment",
+        "expected_status": "PASS"
+      },
+      {
+        "case_id": "H05-3-C",
+        "category": "temporal",
+        "critical": false,
+        "premise": "The synthetic log records discharge at 10:00 and a telephone call at 14:00 on the same day.",
+        "hypothesis": "The call occurred before discharge.",
+        "expected_label": "contradiction",
+        "expected_status": "FAIL"
+      },
+      {
+        "case_id": "H05-3-N",
+        "category": "temporal",
+        "critical": false,
+        "premise": "The synthetic log records discharge at 10:00 and a telephone call at 14:00 on the same day.",
+        "hypothesis": "A prescription was renewed that day.",
+        "expected_label": "neutral",
+        "expected_status": "REVIEW"
+      },
+      {
+        "case_id": "H06-1-E",
+        "category": "laterality",
+        "critical": false,
+        "premise": "The fictional report locates a bruise on the right shoulder.",
+        "hypothesis": "The bruise is on the right shoulder.",
+        "expected_label": "entailment",
+        "expected_status": "PASS"
+      },
+      {
+        "case_id": "H06-1-C",
+        "category": "laterality",
+        "critical": true,
+        "premise": "The fictional report locates a bruise on the right shoulder.",
+        "hypothesis": "The bruise is on the left shoulder.",
+        "expected_label": "contradiction",
+        "expected_status": "FAIL"
+      },
+      {
+        "case_id": "H06-1-N",
+        "category": "laterality",
+        "critical": false,
+        "premise": "The fictional report locates a bruise on the right shoulder.",
+        "hypothesis": "There is a bruise on the right knee.",
+        "expected_label": "neutral",
+        "expected_status": "REVIEW"
+      },
+      {
+        "case_id": "H06-2-E",
+        "category": "laterality",
+        "critical": false,
+        "premise": "The synthetic examination documents reduced sensation in the left foot.",
+        "hypothesis": "The left foot has reduced sensation.",
+        "expected_label": "entailment",
+        "expected_status": "PASS"
+      },
+      {
+        "case_id": "H06-2-C",
+        "category": "laterality",
+        "critical": false,
+        "premise": "The synthetic examination documents reduced sensation in the left foot.",
+        "hypothesis": "The right foot has reduced sensation instead of the left.",
+        "expected_label": "contradiction",
+        "expected_status": "FAIL"
+      },
+      {
+        "case_id": "H06-2-N",
+        "category": "laterality",
+        "critical": false,
+        "premise": "The synthetic examination documents reduced sensation in the left foot.",
+        "hypothesis": "The left hand has reduced sensation.",
+        "expected_label": "neutral",
+        "expected_status": "REVIEW"
+      },
+      {
+        "case_id": "H06-3-E",
+        "category": "laterality",
+        "critical": false,
+        "premise": "The simulated image description identifies a lesion in the left kidney.",
+        "hypothesis": "The lesion is in the left kidney.",
+        "expected_label": "entailment",
+        "expected_status": "PASS"
+      },
+      {
+        "case_id": "H06-3-C",
+        "category": "laterality",
+        "critical": false,
+        "premise": "The simulated image description identifies a lesion in the left kidney.",
+        "hypothesis": "The lesion is in the right kidney.",
+        "expected_label": "contradiction",
+        "expected_status": "FAIL"
+      },
+      {
+        "case_id": "H06-3-N",
+        "category": "laterality",
+        "critical": false,
+        "premise": "The simulated image description identifies a lesion in the left kidney.",
+        "hypothesis": "A cyst is present in the liver.",
+        "expected_label": "neutral",
+        "expected_status": "REVIEW"
+      },
+      {
+        "case_id": "H07-1-E",
+        "category": "allergy",
+        "critical": false,
+        "premise": "The fictional allergy list records an allergy to latex.",
+        "hypothesis": "Latex is recorded as an allergen.",
+        "expected_label": "entailment",
+        "expected_status": "PASS"
+      },
+      {
+        "case_id": "H07-1-C",
+        "category": "allergy",
+        "critical": true,
+        "premise": "The fictional allergy list records an allergy to latex.",
+        "hypothesis": "The record explicitly states no latex allergy.",
+        "expected_label": "contradiction",
+        "expected_status": "FAIL"
+      },
+      {
+        "case_id": "H07-1-N",
+        "category": "allergy",
+        "critical": false,
+        "premise": "The fictional allergy list records an allergy to latex.",
+        "hypothesis": "The person is allergic to shellfish.",
+        "expected_label": "neutral",
+        "expected_status": "REVIEW"
+      },
+      {
+        "case_id": "H07-2-E",
+        "category": "allergy",
+        "critical": false,
+        "premise": "The synthetic chart lists a sulfonamide antibiotic allergy.",
+        "hypothesis": "A sulfonamide antibiotic allergy is documented.",
+        "expected_label": "entailment",
+        "expected_status": "PASS"
+      },
+      {
+        "case_id": "H07-2-C",
+        "category": "allergy",
+        "critical": false,
+        "premise": "The synthetic chart lists a sulfonamide antibiotic allergy.",
+        "hypothesis": "The chart explicitly rules out a sulfonamide antibiotic allergy.",
+        "expected_label": "contradiction",
+        "expected_status": "FAIL"
+      },
+      {
+        "case_id": "H07-2-N",
+        "category": "allergy",
+        "critical": false,
+        "premise": "The synthetic chart lists a sulfonamide antibiotic allergy.",
+        "hypothesis": "The person has a pollen allergy.",
+        "expected_label": "neutral",
+        "expected_status": "REVIEW"
+      },
+      {
+        "case_id": "H07-3-E",
+        "category": "allergy",
+        "critical": false,
+        "premise": "The simulated record reports a nickel contact allergy.",
+        "hypothesis": "Nickel contact allergy is recorded.",
+        "expected_label": "entailment",
+        "expected_status": "PASS"
+      },
+      {
+        "case_id": "H07-3-C",
+        "category": "allergy",
+        "critical": false,
+        "premise": "The simulated record reports a nickel contact allergy.",
+        "hypothesis": "Nickel contact allergy is explicitly absent.",
+        "expected_label": "contradiction",
+        "expected_status": "FAIL"
+      },
+      {
+        "case_id": "H07-3-N",
+        "category": "allergy",
+        "critical": false,
+        "premise": "The simulated record reports a nickel contact allergy.",
+        "hypothesis": "The person has a reaction to adhesive tape.",
+        "expected_label": "neutral",
+        "expected_status": "REVIEW"
+      },
+      {
+        "case_id": "H08-1-E",
+        "category": "demographic",
+        "critical": false,
+        "premise": "The fictional registration record states age 46 years.",
+        "hypothesis": "The recorded age is 46 years.",
+        "expected_label": "entailment",
+        "expected_status": "PASS"
+      },
+      {
+        "case_id": "H08-1-C",
+        "category": "demographic",
+        "critical": true,
+        "premise": "The fictional registration record states age 46 years.",
+        "hypothesis": "The recorded age is 64 years.",
+        "expected_label": "contradiction",
+        "expected_status": "FAIL"
+      },
+      {
+        "case_id": "H08-1-N",
+        "category": "demographic",
+        "critical": false,
+        "premise": "The fictional registration record states age 46 years.",
+        "hypothesis": "The person lives in a coastal town.",
+        "expected_label": "neutral",
+        "expected_status": "REVIEW"
+      },
+      {
+        "case_id": "H08-2-E",
+        "category": "demographic",
+        "critical": false,
+        "premise": "The synthetic profile gives birth year 1987.",
+        "hypothesis": "The listed birth year is 1987.",
+        "expected_label": "entailment",
+        "expected_status": "PASS"
+      },
+      {
+        "case_id": "H08-2-C",
+        "category": "demographic",
+        "critical": false,
+        "premise": "The synthetic profile gives birth year 1987.",
+        "hypothesis": "The listed birth year is 1978.",
+        "expected_label": "contradiction",
+        "expected_status": "FAIL"
+      },
+      {
+        "case_id": "H08-2-N",
+        "category": "demographic",
+        "critical": false,
+        "premise": "The synthetic profile gives birth year 1987.",
+        "hypothesis": "The person has two siblings.",
+        "expected_label": "neutral",
+        "expected_status": "REVIEW"
+      },
+      {
+        "case_id": "H08-3-E",
+        "category": "demographic",
+        "critical": false,
+        "premise": "The fictional intake lists the preferred language as Spanish.",
+        "hypothesis": "Spanish is the preferred language on the intake.",
+        "expected_label": "entailment",
+        "expected_status": "PASS"
+      },
+      {
+        "case_id": "H08-3-C",
+        "category": "demographic",
+        "critical": false,
+        "premise": "The fictional intake lists the preferred language as Spanish.",
+        "hypothesis": "French is the preferred language instead of Spanish.",
+        "expected_label": "contradiction",
+        "expected_status": "FAIL"
+      },
+      {
+        "case_id": "H08-3-N",
+        "category": "demographic",
+        "critical": false,
+        "premise": "The fictional intake lists the preferred language as Spanish.",
+        "hypothesis": "The person works in education.",
+        "expected_label": "neutral",
+        "expected_status": "REVIEW"
+      },
+      {
+        "case_id": "H09-1-E",
+        "category": "missing-evidence",
+        "critical": false,
+        "premise": "The fictional record contains a blood pressure value but no documented weight.",
+        "hypothesis": "Weight is not documented in this record.",
+        "expected_label": "entailment",
+        "expected_status": "PASS"
+      },
+      {
+        "case_id": "H09-1-C",
+        "category": "missing-evidence",
+        "critical": true,
+        "premise": "The fictional record contains a blood pressure value but no documented weight.",
+        "hypothesis": "Weight is documented as 72 kg.",
+        "expected_label": "contradiction",
+        "expected_status": "FAIL"
+      },
+      {
+        "case_id": "H09-1-N",
+        "category": "missing-evidence",
+        "critical": false,
+        "premise": "The fictional record contains a blood pressure value but no documented weight.",
+        "hypothesis": "The person has a documented history of fractures.",
+        "expected_label": "neutral",
+        "expected_status": "REVIEW"
+      },
+      {
+        "case_id": "H09-2-E",
+        "category": "missing-evidence",
+        "critical": false,
+        "premise": "The simulated summary says the vaccination history is unknown.",
+        "hypothesis": "Vaccination history is recorded as unknown.",
+        "expected_label": "entailment",
+        "expected_status": "PASS"
+      },
+      {
+        "case_id": "H09-2-C",
+        "category": "missing-evidence",
+        "critical": false,
+        "premise": "The simulated summary says the vaccination history is unknown.",
+        "hypothesis": "Vaccination history is confirmed complete.",
+        "expected_label": "contradiction",
+        "expected_status": "FAIL"
+      },
+      {
+        "case_id": "H09-2-N",
+        "category": "missing-evidence",
+        "critical": false,
+        "premise": "The simulated summary says the vaccination history is unknown.",
+        "hypothesis": "The person received an influenza vaccine last year.",
+        "expected_label": "neutral",
+        "expected_status": "REVIEW"
+      },
+      {
+        "case_id": "H09-3-E",
+        "category": "missing-evidence",
+        "critical": false,
+        "premise": "The fictional note explicitly marks smoking status as unavailable.",
+        "hypothesis": "Smoking status is unavailable in the note.",
+        "expected_label": "entailment",
+        "expected_status": "PASS"
+      },
+      {
+        "case_id": "H09-3-C",
+        "category": "missing-evidence",
+        "critical": false,
+        "premise": "The fictional note explicitly marks smoking status as unavailable.",
+        "hypothesis": "Smoking status is recorded as never-smoker.",
+        "expected_label": "contradiction",
+        "expected_status": "FAIL"
+      },
+      {
+        "case_id": "H09-3-N",
+        "category": "missing-evidence",
+        "critical": false,
+        "premise": "The fictional note explicitly marks smoking status as unavailable.",
+        "hypothesis": "The person drinks coffee daily.",
+        "expected_label": "neutral",
+        "expected_status": "REVIEW"
+      },
+      {
+        "case_id": "H10-1-E",
+        "category": "paraphrase",
+        "critical": false,
+        "premise": "The simulated note describes a nonproductive cough.",
+        "hypothesis": "The cough produces no sputum.",
+        "expected_label": "entailment",
+        "expected_status": "PASS"
+      },
+      {
+        "case_id": "H10-1-C",
+        "category": "paraphrase",
+        "critical": true,
+        "premise": "The simulated note describes a nonproductive cough.",
+        "hypothesis": "The cough produces sputum.",
+        "expected_label": "contradiction",
+        "expected_status": "FAIL"
+      },
+      {
+        "case_id": "H10-1-N",
+        "category": "paraphrase",
+        "critical": false,
+        "premise": "The simulated note describes a nonproductive cough.",
+        "hypothesis": "The person has chest tightness.",
+        "expected_label": "neutral",
+        "expected_status": "REVIEW"
+      },
+      {
+        "case_id": "H10-2-E",
+        "category": "paraphrase",
+        "critical": false,
+        "premise": "The fictional assessment documents difficulty swallowing.",
+        "hypothesis": "Swallowing is difficult.",
+        "expected_label": "entailment",
+        "expected_status": "PASS"
+      },
+      {
+        "case_id": "H10-2-C",
+        "category": "paraphrase",
+        "critical": false,
+        "premise": "The fictional assessment documents difficulty swallowing.",
+        "hypothesis": "Swallowing is effortless and normal.",
+        "expected_label": "contradiction",
+        "expected_status": "FAIL"
+      },
+      {
+        "case_id": "H10-2-N",
+        "category": "paraphrase",
+        "critical": false,
+        "premise": "The fictional assessment documents difficulty swallowing.",
+        "hypothesis": "The person has difficulty hearing.",
+        "expected_label": "neutral",
+        "expected_status": "REVIEW"
+      },
+      {
+        "case_id": "H10-3-E",
+        "category": "paraphrase",
+        "critical": false,
+        "premise": "The synthetic record states that the person uses a wheelchair for mobility.",
+        "hypothesis": "The person relies on a wheelchair to move around.",
+        "expected_label": "entailment",
+        "expected_status": "PASS"
+      },
+      {
+        "case_id": "H10-3-C",
+        "category": "paraphrase",
+        "critical": false,
+        "premise": "The synthetic record states that the person uses a wheelchair for mobility.",
+        "hypothesis": "The person walks independently without any mobility aid.",
+        "expected_label": "contradiction",
+        "expected_status": "FAIL"
+      },
+      {
+        "case_id": "H10-3-N",
+        "category": "paraphrase",
+        "critical": false,
+        "premise": "The synthetic record states that the person uses a wheelchair for mobility.",
+        "hypothesis": "The person uses hearing aids.",
+        "expected_label": "neutral",
+        "expected_status": "REVIEW"
+      }
+    ],
+    "qualification_thresholds": {
+      "minimum_label_accuracy": 0.9,
+      "minimum_decision_accuracy": 0.9,
+      "minimum_per_label_accuracy": {
+        "entailment": 0,
+        "neutral": 0,
+        "contradiction": 0
+      },
+      "require_all_critical_cases": true
+    }
+  },
+  "payload_sha256": "PENDING_FREEZE_AFTER_REVIEW"
+}
