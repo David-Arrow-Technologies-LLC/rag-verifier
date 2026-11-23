@@ -29,3 +29,21 @@ def test_holdout_rejects_label_imbalance(tmp_path):
     path.write_text(json.dumps(candidate), encoding="utf-8")
     with pytest.raises(ValueError, match="unbalanced"):
         audit(candidate_path=path)
+
+
+def test_holdout_rejects_modified_model_revision(tmp_path):
+    candidate = json.loads(CANDIDATE.read_text(encoding="utf-8"))
+    candidate["payload"]["model"]["model_revision"] = "a" * 40
+    path = tmp_path / "candidate.json"
+    path.write_text(json.dumps(candidate), encoding="utf-8")
+    with pytest.raises(ValueError, match="pinned model"):
+        audit(candidate_path=path)
+
+
+def test_holdout_rejects_changed_release_threshold(tmp_path):
+    candidate = json.loads(CANDIDATE.read_text(encoding="utf-8"))
+    candidate["payload"]["policy"]["pass_threshold"] = 0.7
+    path = tmp_path / "candidate.json"
+    path.write_text(json.dumps(candidate), encoding="utf-8")
+    with pytest.raises(ValueError, match="release thresholds"):
+        audit(candidate_path=path)
