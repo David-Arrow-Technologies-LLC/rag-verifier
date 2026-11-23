@@ -23,7 +23,17 @@ def audit(baseline_path=BASELINE, candidate_path=CANDIDATE):
     candidate_document = json.loads(Path(candidate_path).read_text(encoding="utf-8"))
     if candidate_document["payload_sha256"] != "PENDING_FREEZE_AFTER_REVIEW":
         raise ValueError("candidate freeze sentinel missing; frozen manifests need separate approval")
-    cases = candidate_document["payload"]["cases"]
+    payload = candidate_document["payload"]
+    baseline_payload = json.loads(Path(baseline_path).read_text(encoding="utf-8"))["payload"]
+    if payload["schema_version"] != 2 or payload["model"] != baseline_payload["model"]:
+        raise ValueError("holdout schema or pinned model diverges from baseline")
+    if payload["policy"] != baseline_payload["policy"]:
+        raise ValueError("holdout release thresholds diverge from baseline")
+    if payload["qualification_thresholds"]["minimum_label_accuracy"] != 0.9 or (
+        payload["qualification_thresholds"]["minimum_decision_accuracy"] != 0.9
+    ):
+        raise ValueError("holdout accuracy targets diverge from protocol")
+    cases = payload["cases"]
     if len(cases) != 90:
         raise ValueError("holdout must contain exactly 90 cases")
     if len({case["case_id"] for case in cases}) != 90:
@@ -35,6 +45,9 @@ def audit(baseline_path=BASELINE, candidate_path=CANDIDATE):
     if any(sum(case["category"] == cat and case["expected_label"] == label for case in cases) != 3
            for cat in CATEGORIES for label in LABEL_TO_STATUS):
         raise ValueError("category/label coverage mismatch")
+    if any(set(case) != {"case_id", "category", "critical", "premise", "hypothesis",
+                             "expected_label", "expected_status"} for case in cases):
+        raise ValueError("unexpected candidate case schema")
     if not any(case["critical"] for case in cases):
         raise ValueError("no critical cases")
     if any(not isinstance(case["critical"], bool) for case in cases):
@@ -54,7 +67,9 @@ def audit(baseline_path=BASELINE, candidate_path=CANDIDATE):
                 comparisons.append((case["case_id"], round(similarity, 3)))
     if comparisons:
         raise ValueError(f"near-duplicate baseline pairs require adjudication: {comparisons}")
-    return {"candidate_cases": 90, "per_label": dict(Counter(c["expected_label"] for c in cases)),
+    # Three hypotheses intentionally share each premise: 90 pairs, not 90 independent scenarios.
+    unique_premises = len({normalize(c["premise"]) for c in cases})
+    return {"unique_premises": unique_premises, "candidate_cases": 90, "per_label": dict(Counter(c["expected_label"] for c in cases)),
             "per_category": dict(Counter(c["category"] for c in cases)),
             "baseline_pairs": len(baseline), "near_duplicate_threshold": 0.92,
             "annotation_status": "single-author candidate; independent review pending",
