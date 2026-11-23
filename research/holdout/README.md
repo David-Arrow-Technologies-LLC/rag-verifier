@@ -10,6 +10,7 @@
 - **Known prior evidence:** authorship followed inspection of the original 30-case manifest and knowledge of its three observed discrepancies. Category selection was preregistered; this may introduce selection bias. The protocol's stronger independence condition remains **unmet pending independent review**.
 - **Static checks:** `python research/holdout/audit_candidate.py` verifies counts, label/status mapping, category balance, exact normalized pair duplicates, and flags high-similarity pairs against the baseline using SequenceMatcher >= 0.92. This heuristic does not establish semantic independence. Tests include intentionally corrupted candidates.
 - **Digest:** the candidate intentionally contains `PENDING_FREEZE_AFTER_REVIEW` rather than a valid manifest digest, so the existing qualification runner cannot load or execute it as a qualification manifest.
+- **Sampling dependence:** 90 premise/hypothesis pairs are constructed from only 30 distinct premises (three hypotheses per premise). Results are correlated within each premise; a 90-case binomial interval may overstate effective independence. Report premise-clustered sensitivity analyses and do not present the 90 cases as 90 independent clinical scenarios.
 - **Critical cases:** ten contradiction cases are provisionally flagged critical; the criticality classification requires reviewer confirmation.
 
 ## Mandatory review and freeze checklist
