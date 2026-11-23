@@ -815,7 +815,7 @@
         "category": "paraphrase",
         "critical": false,
         "premise": "The synthetic record states that the person uses a wheelchair for mobility.",
-        "hypothesis": "The person walks independently without any mobility aid.",
+        "hypothesis": "The person does not use a wheelchair for mobility.",
         "expected_label": "contradiction",
         "expected_status": "FAIL"
       },
