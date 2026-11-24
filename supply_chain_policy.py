@@ -13,6 +13,8 @@ USES_KEY = re.compile(r"(?:^|[,{\s])[\"']?uses[\"']?\s*:")
 EXACT_HEAD_REF = "ref: ${{ github.event.pull_request.head.sha || github.sha }}"
 VALIDATE_COMMAND = "run: python supply_chain_policy.py"
 WORKFLOW_MANIFEST = "ci_supply_chain_manifest.json"
+ADVERSARIAL_MANIFEST = "adversarial_qualification_manifest.json"
+APPROVED_ADVERSARIAL_PAYLOAD_SHA256 = "8cf8e452489f7cdb5a3424cf13cdd15dc395866eee8f0ad9a80398bbe557dd57"
 APPROVED_ACTIONS = {
     "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
     "actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065",
@@ -22,7 +24,7 @@ APPROVED_WORKFLOW_SHA256 = {
     ".github/workflows/rag-verifier-minilm-integration.yml": "3a0b047a823939065fee2eec5bfa22bb04b73fc8ac6557b7eb9db3dc4f4e20be",
     ".github/workflows/rag-verifier-nli-integration.yml": "99ebf7456c1f9afb61d762dccd3ccdda16bf7b36abac66e02a444c8dd0f60c37",
     ".github/workflows/rag-verifier-release-qualification.yml": "d2c7fa3125c10d7c69ccb2edb3fff25d6d30586e489bdbec61eeb305d76d19a6",
-    ".github/workflows/rag-verifier-unit.yml": "f1e1bc3fc59f84f5741389a4b9a9d8eb03052e7b0f8c586cda12d9c7f0270476",
+    ".github/workflows/rag-verifier-unit.yml": "5d07e51e3ecbf23428fcd2033787a3a6ce0aa225cdc12c410299a271be357a6c",
 }
 APPROVED_INSTALLER_SHA256 = "fe99e6cafd48e61aa4210c13308062f2108abbaea36f228542b0276e0a7c3660"
 
@@ -78,6 +80,28 @@ def validate_workflow_manifest(root, workflow_paths):
 
 def file_sha256_bytes(value):
     return hashlib.sha256(value).hexdigest()
+
+
+def validate_adversarial_manifest_identity(root):
+    path = root / ADVERSARIAL_MANIFEST
+    document = json.loads(
+        path.read_text(encoding="utf-8"),
+        object_pairs_hook=reject_duplicate_json_keys,
+    )
+    if not isinstance(document, dict) or set(document) != {"payload", "payload_sha256"}:
+        raise ValueError("adversarial manifest envelope is invalid")
+    payload = document["payload"]
+    digest = document["payload_sha256"]
+    if (
+        not isinstance(payload, dict)
+        or not isinstance(digest, str)
+        or re.fullmatch(r"[0-9a-f]{64}", digest) is None
+        or file_sha256_bytes(canonical_json(payload).encode()) != digest
+    ):
+        raise ValueError("adversarial manifest payload digest mismatch")
+    if digest != APPROVED_ADVERSARIAL_PAYLOAD_SHA256:
+        raise ValueError("adversarial manifest does not match the approved policy root")
+    return digest
 
 
 def normalize_package_name(name):
@@ -201,6 +225,7 @@ def validate_repository(root="."):
     if not workflow_paths:
         raise ValueError("repository must contain workflow files")
     workflow_manifest_sha256 = validate_workflow_manifest(root, workflow_paths)
+    adversarial_manifest_sha256 = validate_adversarial_manifest_identity(root)
     if file_sha256(root / "install_locked_requirements.py") != APPROVED_INSTALLER_SHA256:
         raise ValueError("locked installer does not match the approved policy root")
     for path in workflow_paths:
@@ -230,6 +255,7 @@ def validate_repository(root="."):
     return {
         "workflows": len(workflow_paths),
         "workflow_manifest_sha256": workflow_manifest_sha256,
+        "adversarial_manifest_sha256": adversarial_manifest_sha256,
         "locks": locks,
     }
 

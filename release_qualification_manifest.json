@@ -24,8 +24,8 @@
         "requirements-integration.lock": "ac2ed0b77ff9a04e1a6c62b96b5fc86106c3cdf5a30d0853bd5ca925f631fac9"
       },
       "workflow_manifest_path": "ci_supply_chain_manifest.json",
-      "workflow_manifest_sha256": "1ed205d30289090cb6bbaea146e60b99fbc5b4348d127dce0824f2d05c78fd77"
+      "workflow_manifest_sha256": "1f58a113c065cc15c4f9a46e4817cde609853cf6e42bac6104de5759f340ad9c"
     }
   },
-  "payload_sha256": "c609f60acb2c73704fbf35d3b23acd71bca5dc369811d027b5bfa02c2cda08cb"
+  "payload_sha256": "ba2ec69204e230a7c7e10bc3a6f2ea6f8efeeb6f27dceebf59133124394f55c1"
 }

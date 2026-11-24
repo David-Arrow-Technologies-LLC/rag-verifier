@@ -67,3 +67,15 @@ jobs:
 
       - name: Run deterministic RAG gate
         run: python -m pytest -m "not integration" -v
+
+      - name: Run RAG-V30 adversarial qualification
+        run: python run_adversarial_qualification.py --manifest adversarial_qualification_manifest.json --output qualification-evidence/rag-v30-adversarial.json --source-revision ${{ github.event.pull_request.head.sha || github.sha }}
+
+      - name: Retain RAG-V30 adversarial qualification evidence
+        if: always() && hashFiles('qualification-evidence/rag-v30-adversarial.json') != ''
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: rag-v30-adversarial-${{ github.event.pull_request.head.sha || github.sha }}
+          path: qualification-evidence/rag-v30-adversarial.json
+          if-no-files-found: error
+          retention-days: 90

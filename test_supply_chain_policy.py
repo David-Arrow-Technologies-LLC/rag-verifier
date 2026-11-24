@@ -10,6 +10,9 @@ from supply_chain_policy import validate_lockfile, validate_repository, validate
 def test_repository_supply_chain_is_immutable_and_hash_locked():
     result = validate_repository()
     assert result["workflows"] == 4
+    assert result["adversarial_manifest_sha256"] == (
+        supply_chain_policy.APPROVED_ADVERSARIAL_PAYLOAD_SHA256
+    )
     assert result["locks"]["requirements-ci.lock"]["packages"] > 0
     assert result["locks"]["requirements-integration.lock"]["packages"] > 0
 
@@ -138,6 +141,26 @@ def test_repository_rejects_extra_ungoverned_job_after_manifest_refresh(tmp_path
         validate_repository(tmp_path)
 
 
+def test_rehashed_adversarial_corpus_is_rejected_by_external_trust_root(
+    tmp_path,
+    monkeypatch,
+):
+    _write_valid_repository(tmp_path, monkeypatch)
+    path = tmp_path / "adversarial_qualification_manifest.json"
+    document = json.loads(path.read_text(encoding="utf-8"))
+    document["payload"]["weakened"] = True
+    document["payload_sha256"] = hashlib.sha256(
+        json.dumps(
+            document["payload"],
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode()
+    ).hexdigest()
+    path.write_text(json.dumps(document, sort_keys=True) + "\n", encoding="utf-8")
+    with pytest.raises(ValueError, match="approved policy root"):
+        validate_repository(tmp_path)
+
+
 def _write_valid_repository(root, monkeypatch):
     workflow_root = root / ".github" / "workflows"
     workflow_root.mkdir(parents=True)
@@ -188,6 +211,25 @@ def _write_valid_repository(root, monkeypatch):
         + "\n",
         encoding="utf-8",
     )
+    adversarial_payload = {"fixture": True}
+    adversarial_digest = hashlib.sha256(
+        json.dumps(
+            adversarial_payload,
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode()
+    ).hexdigest()
+    root.joinpath("adversarial_qualification_manifest.json").write_text(
+        json.dumps(
+            {
+                "payload": adversarial_payload,
+                "payload_sha256": adversarial_digest,
+            },
+            sort_keys=True,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
     installer = root / "install_locked_requirements.py"
     installer.write_text("# fixture installer\n", encoding="utf-8")
     monkeypatch.setattr(
@@ -199,6 +241,11 @@ def _write_valid_repository(root, monkeypatch):
         supply_chain_policy,
         "APPROVED_INSTALLER_SHA256",
         hashlib.sha256(installer.read_bytes()).hexdigest(),
+    )
+    monkeypatch.setattr(
+        supply_chain_policy,
+        "APPROVED_ADVERSARIAL_PAYLOAD_SHA256",
+        adversarial_digest,
     )
 
 
