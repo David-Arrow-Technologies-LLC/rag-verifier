@@ -1,0 +1,7 @@
+# Four-party test evidence aggregation
+
+Reuses prepare_evidence and verify_test_attestation. The coordinator supplies raw candidate, baseline, blinded packet, private mapping, two review records, adjudication and a TEST_APPROVE record. Evidence is recomputed rather than accepted as a submitted digest. Exactly four named attestation slots must authenticate the same recomputed evidence digest and their own record digest. Subject identifiers must be distinct after case folding; issuer-scoped attestation identifiers must not repeat within a package. The test registry, clock and revocation set are trusted harness inputs.
+
+The output contains recomputed evidence, participant record and envelope digests and verification time. It is not a signed receipt, a real approval or an executable manifest. All scientific approval, independent authorship, freeze and inference flags remain false. A TEST_REJECT record is rejected, not converted to approval.
+
+Distinct fictional identifiers do not establish distinct humans. The baseline is supplied by the caller and bound, not independently authenticated. Criticality and semantic leakage disposition remain unverified; lexical findings are not clearance. Persistent replay prevention, actual issuer trust, key separation, trusted time, independent authorship and scientific review remain future work. Existing real authority and freeze entry points continue to deny. No real credentials or PHI are used.
